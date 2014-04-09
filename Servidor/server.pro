@@ -20,14 +20,16 @@ SOURCES += main.cpp\
     capturebuffer.cpp \
     conexion.cpp \
     acerca.cpp \
-    sslserver.cpp
+    sslserver.cpp \
+    client.cpp
 
 HEADERS  += mainwindow.h \
     preferencias.h \
     capturebuffer.h \
     conexion.h \
     acerca.h \
-    sslserver.h
+    sslserver.h \
+    client.h
 
 FORMS    += mainwindow.ui \
     preferencias.ui \
