@@ -15,8 +15,9 @@
 
 #include "preferencias.h"
 #include "capturebuffer.h"
+#include "sslserver.h"
 
-#include <QTcpSocket>
+#include <QSslSocket>
 #include <QTcpServer>
 
 namespace Ui {
@@ -46,15 +47,19 @@ private slots:
 
     void startRead();
 
+    void disconnected();
+
 private:
     Ui::MainWindow *ui_;
     QSettings *setting_;
     QByteArray dispdefault_;
     QByteArray dispchoise_;
     QList<QByteArray> devices_;
-    QTcpSocket *clientConnection_;
-    QTcpServer *tcpServer_;
+    QSslSocket *clientConnection_;
+    Server *server_;
     QString host_;
+    QString key;
+    QString certificate;
     int port_;
     int stateClient_;
     int sizeImage_;

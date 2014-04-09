@@ -4,6 +4,7 @@
 #include "acerca.h"
 #include "preferencias.h"
 #include "conexion.h"
+#include "sslserver.h"
 
 bool Paused = true;  //variable para parar/pausar
 
@@ -14,16 +15,18 @@ MainWindow::MainWindow(QWidget *parent) :
     ui_->setupUi(this);
 
     clientConnection_=NULL;
-    tcpServer_=NULL;
+    server_=NULL;
 
     setting_ = new QSettings("Leonor", "viewer"); //configura QSetting
+    key = setting_->value("key", "").toString();
+    certificate = setting_->value("certificate", "").toString();
 }
 
 MainWindow::~MainWindow()
 {
     delete ui_;
     delete setting_;
-    delete tcpServer_;
+    delete server_;
 }
 
 void MainWindow::on_exit_clicked()
@@ -51,22 +54,24 @@ void MainWindow::on_actionCapturar_de_red_triggered()
 {
     //Configurar un servidor para que escuche en un puerto TCP específico
     port_ = setting_->value("viewer/port", "9600").toInt();
-    qDebug()<<port_;
-    tcpServer_ = new QTcpServer(this);
-    tcpServer_->listen(QHostAddress::Any,port_);
-    connect(tcpServer_, SIGNAL(newConnection()), this, SLOT(acceptConnection()));
+    server_ = new Server(this);
+    server_->listen(QHostAddress::Any,port_);
+
+    connect(server_, SIGNAL(signal()), this, SLOT(acceptConnection()));
 }
 
 void MainWindow::acceptConnection()
 {
-    while(tcpServer_->hasPendingConnections())
-    {
-          clientConnection_=tcpServer_->nextPendingConnection();
-          connect(clientConnection_, SIGNAL(disconnected()), clientConnection_, SLOT(deleteLater()));
+    //while(server_->hasPendingConnections())
+    //{
+          clientConnection_ = dynamic_cast<QSslSocket *>(server_->nextPendingConnection());
+
+          connect(clientConnection_, SIGNAL(disconnected()), this, SLOT(disconnected()));
           connect(clientConnection_, SIGNAL(readyRead()), this, SLOT(startRead())); //si esta listo para leer, entra por el slot de leer (startRead)
+
           stateClient_ = 0; //variable de estados
           sizeImage_ = 0;
-    }
+   //}
 }
 
 void MainWindow::startRead()
@@ -161,3 +166,10 @@ void MainWindow::startRead()
   // }
 
 }
+
+void MainWindow::disconnected(){
+    clientConnection_->disconnect();
+    clientConnection_->deleteLater();
+    qDebug() << "Conexion cerrada";
+}
+

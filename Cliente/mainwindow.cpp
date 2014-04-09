@@ -5,8 +5,6 @@
 #include "preferencias.h"
 #include "conexion.h"
 
-
-
 bool Paused = true;  //variable para parar/pausar
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -28,8 +26,14 @@ MainWindow::MainWindow(QWidget *parent) :
     dispchoise_ = setting_->value("viewer/deviceChoise",dispdefault_).toByteArray();
 
     //QtNetwork
-    tcpSocket_ = new QTcpSocket(this);
+    sslSocket_ = new QSslSocket(this);
     connectedServer_=0;
+
+    connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(disconnect()));
+    connect(sslSocket_, SIGNAL(error(QAbstractSocket::SocketError)),this, SLOT(socketError()));
+    sslSocket_->setProtocol(QSsl::SslV3);
+    sslSocket_->ignoreSslErrors();
+
 
 }
 
@@ -41,7 +45,7 @@ MainWindow::~MainWindow()
     delete viewfinder_;
     delete setting_;
     delete captureB_;
-    delete tcpSocket_;
+    delete sslSocket_;
 }
 
 
@@ -87,14 +91,14 @@ void MainWindow::on_actionCapturar_triggered()
      port_ = setting_->value("viewer/port", 9600).toInt();
      //como la conexion es asincrona, esperamos a que se conecte.
      qDebug() << host_ << port_;
-     tcpSocket_->connectToHost(host_, port_);
 
-     connect(tcpSocket_, SIGNAL(connected()), this, SLOT(connected()));
+     connect(sslSocket_, SIGNAL(encrypted()), this, SLOT(connected()));
+     sslSocket_->connectToHostEncrypted(host_, port_);
+     sslSocket_->ignoreSslErrors();
 }
 
 void MainWindow::image1(QImage image)
 {
-
     //Modificar (pintar) la imagen para imprimirla en el label
     QTime time;
     QTime currenTime= time.currentTime();
@@ -130,13 +134,17 @@ void MainWindow::image1(QImage image)
         qint64 timestamp = QDateTime::currentMSecsSinceEpoch(); //tiempo en milisegundos desde EPOC hasta el instante de la imagen
 
         //Envio de los distintos campos separados por \n
-        tcpSocket_->write(name);
-        tcpSocket_->write("\n");
-        tcpSocket_->write(QByteArray::number(timestamp));
-        tcpSocket_->write("\n");
-        tcpSocket_->write(QByteArray::number(sizeImg));
-        tcpSocket_->write("\n");
-        tcpSocket_->write(bytes);
+        sslSocket_->write(name);
+        sslSocket_->write("\n");
+        sslSocket_->write(QByteArray::number(timestamp));
+        sslSocket_->write("\n");
+        sslSocket_->write(QByteArray::number(sizeImg));
+        sslSocket_->write("\n");
+        sslSocket_->write(bytes);
+    }
+    else
+    {
+        qDebug()<<"Error al enviar mensaje";
     }
 }
 
@@ -145,6 +153,18 @@ void MainWindow::connected()
     connectedServer_ = 1;
     qDebug() << "Connected to server";
     camera_->start();
+}
+
+void MainWindow::disconnect()
+{
+    qDebug() << "Disconnected from server";
+    connectedServer_ = 0;
+}
+
+void MainWindow::socketError()
+{
+  qDebug() << "Socket error: " << sslSocket_->errorString();
+  sslSocket_->close();
 }
 
 void MainWindow::on_start_clicked()
@@ -168,7 +188,7 @@ void MainWindow::on_stop_clicked()
 void MainWindow::on_exit_clicked()
 {
     if(connectedServer_){
-        tcpSocket_->disconnect();
+        sslSocket_->disconnect();
     }
     qApp->quit(); //qApp = QApplication del main
 }
@@ -176,7 +196,7 @@ void MainWindow::on_exit_clicked()
 void MainWindow::on_actionSalir_triggered()
 {
     if(connectedServer_){
-        tcpSocket_->disconnect();
+        sslSocket_->disconnect();
     }
     qApp->quit();
 }
@@ -197,7 +217,6 @@ void MainWindow::on_actionPreferencias_triggered()
    Preferencias prefe(this);
    prefe.exec();
 }
-
 
 void MainWindow::on_actionConexion_triggered()
 {

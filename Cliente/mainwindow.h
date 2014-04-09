@@ -16,7 +16,7 @@
 #include "preferencias.h"
 #include "capturebuffer.h"
 
-#include <QTcpSocket>
+#include <QSslSocket>
 
 #include <QDateTime>
 
@@ -59,6 +59,9 @@ private slots:
 
     void connected();
 
+    void disconnect();
+
+    void socketError();
 
 private:
     Ui::MainWindow *ui_;
@@ -69,7 +72,7 @@ private:
     QByteArray dispdefault_;
     QByteArray dispchoise_;
     captureBuffer *captureB_;
-    QTcpSocket *tcpSocket_;
+    QSslSocket *sslSocket_;
     QList<QByteArray> devices_;
     bool connectedServer_;
     QString host_;

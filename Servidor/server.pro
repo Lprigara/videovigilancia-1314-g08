@@ -19,13 +19,15 @@ SOURCES += main.cpp\
     preferencias.cpp \
     capturebuffer.cpp \
     conexion.cpp \
-    acerca.cpp
+    acerca.cpp \
+    sslserver.cpp
 
 HEADERS  += mainwindow.h \
     preferencias.h \
     capturebuffer.h \
     conexion.h \
-    acerca.h
+    acerca.h \
+    sslserver.h
 
 FORMS    += mainwindow.ui \
     preferencias.ui \
