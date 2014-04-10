@@ -2,6 +2,18 @@
 #include "ui_mainwindow.h"
 
 
+//TODO PROBLEMS
+//on connect of 2nd client: @ server
+/*
+[...]
+"Opened connection with client "
+Fallo en la conexion "Error while reading: error:1408F081:SSL routines:SSL3_GET_RECORD:block cipher pad is wrong"
+The program has unexpectedly finished.
+*/
+//closing server: crashes
+//timestamp to qint64 conversion (not necessary, for showing in image)
+//timestamp to HH:MM:SS conversion + dont write time before sending
+
 
 bool Paused = true;  //variable para parar/pausar
 
@@ -10,8 +22,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui_(new Ui::MainWindow)
 {
     ui_->setupUi(this);
-
-    clientCounter = 0;
 
     server_=NULL;
     setting_ = new QSettings("Leonor", "viewer"); //configura QSetting
@@ -64,14 +74,14 @@ void MainWindow::handleNewConnections()
     while(server_->hasPendingConnections())
     {
         QSslSocket* next_connection = dynamic_cast<QSslSocket *>(server_->nextPendingConnection());
-        QString next_clientName = "Client" + clientCounter;
-        Client* next_client = new Client(next_clientName, next_connection);
-        clientCounter++;
+        Client* next_client = new Client(next_connection);
 
+        clientConnections.append(next_client);
         connect(next_client, SIGNAL(disconnected()), this, SLOT(clientDisconnected()));
         connect(next_client, SIGNAL(readyRead()), this, SLOT(readClientData()));
+        connect(next_client, SIGNAL(receivedCompletePackage()), this, SLOT(clientCompletePackage()));
 
-        qDebug() << "Opened connection with client " + next_client->getName();
+        qDebug() << "Opened connection with a new client";
     }
 }
 
@@ -93,6 +103,23 @@ void MainWindow::clientDisconnected(){
 
     clientConnections.removeAll(client);
     client->deleteLater();
-    qDebug() << "Closed connection with client " + client->getName();
+    qDebug() << "Closed connection with client " << client->getName();
+}
+
+void MainWindow::clientCompletePackage()
+{
+    Client* client = qobject_cast<Client *>(sender());
+
+    if (!client)
+        return;
+
+    if (clientConnections.indexOf(client) == 0) //only show images of the first client
+    {
+        ui_->label->setPixmap(*(client->getPixmap()));
+    }
+    else
+    {
+        qDebug() << "Not showing data of client " << client->getName();
+    }
 }
 

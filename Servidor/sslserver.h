@@ -3,6 +3,10 @@
 
 #include <QTcpServer>
 #include <QSslSocket>
+#include <QSslCertificate>
+#include <QSslKey>
+#include <QFile>
+#include <QSslConfiguration>
 
 class Server: public QTcpServer
 {

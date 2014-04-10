@@ -52,6 +52,8 @@ private slots:
 
     void clientDisconnected();
 
+    void clientCompletePackage();
+
 private:
     Ui::MainWindow *ui_;
     QSettings *setting_;
@@ -64,7 +66,6 @@ private:
     QString key;
     QString certificate;
     int port_;
-    int clientCounter;
 };
 
 #endif // MAINWINDOW_H

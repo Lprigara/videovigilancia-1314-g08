@@ -1,9 +1,5 @@
 #include "sslserver.h"
 #include "mainwindow.h"
-#include <QSslCertificate>
-#include <QSslKey>
-#include <QFile>
-#include <QSslConfiguration>
 
 Server::Server(QObject *parent): QTcpServer(parent)
 {
@@ -84,12 +80,12 @@ void Server::stepToMain(){
 void Server::connectionFailure(){
     qDebug() << "Fallo en la conexion" << socket->errorString();
     socket->disconnect();
-    socket->deleteLater();
+    //socket->deleteLater();
     socket->ignoreSslErrors();
 }
 
 void Server::disconnect(){
     socket->disconnect();
-    socket->deleteLater();
+    //socket->deleteLater();
     qDebug() << "Conexion cerrada";
 }

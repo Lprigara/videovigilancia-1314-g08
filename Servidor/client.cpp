@@ -1,10 +1,10 @@
 #include "client.h"
 
-Client::Client(QString name, QSslSocket* sslSocket)
+Client::Client(QSslSocket* sslSocket)
 {
-    this->name = name;
     this->sslSocket = sslSocket;
     protocol_state = 0;
+    last_pixmap = NULL;
 
     connect(sslSocket, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
     connect(sslSocket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
@@ -24,6 +24,10 @@ QString Client::getName()
 {
     return name;
 }
+QPixmap* Client::getPixmap()
+{
+    return last_pixmap;
+}
 
 void Client::readByProtocol()
 {
@@ -40,32 +44,32 @@ void Client::readByProtocol()
             aux.clear();
             clientName.clear();
             //guardamos la linea en un objeto QByteArray, que luego recorreremos para imprimir su contenido sin el caracter \n
-            aux= sslSocket->readLine(); //lee hasta que encuentre un caracter \n
+            aux = sslSocket->readLine(); //lee hasta que encuentre un caracter \n
             int i=0;
             while(aux[i] != '\n')
             {
                 clientName[i]=aux[i];
                 i++;
             }
-            qDebug()<<"Nombre Cliente: "<<clientName;
+            name = QString(clientName);
+            //qDebug()<<"Clientname: " << clientName;
             protocol_state = 1;
         }
-
         break;
     case 1: //Timestamp
         if (sslSocket->canReadLine())
         {
             aux.clear();
             timestamp.clear();
-            //guardamos la linea en un objeto QByteArray, que luego recorreremos para imprimir su contenido sin el caracter \n
-            aux= sslSocket->readLine();
+            aux = sslSocket->readLine();
             int i=0;
             while(aux[i] != '\n')
             {
                 timestamp[i]=aux[i];
                 i++;
             }
-            qDebug()<<"Fecha en ms: "<< timestamp;
+            last_timestamp = QString(timestamp);
+            //qDebug()<<"Timestamp(ms): " << last_timestamp;
             protocol_state = 2;
         }
         break;
@@ -74,15 +78,13 @@ void Client::readByProtocol()
         {
             sizeIm.clear();
             aux.clear();
-            //guardamos la linea en un objeto QByteArray, que luego recorreremos para imprimir su contenido sin el caracter \n
-            sizeIm=sslSocket->readLine(); //size=6
+            sizeIm = sslSocket->readLine(); //size=6
             int i=0;
             while(sizeIm[i] != '\n')
             {
                 aux[i]=sizeIm[i];
                 i++;
             }
-
             next_image_size = aux.toInt(); //convertimos el QByteArray del tamaño de la imagen en un objeto tipo int para indicarle al read siguiente cuantos caracteres hay que leer.
             protocol_state = 3;
         }
@@ -95,18 +97,20 @@ void Client::readByProtocol()
             QImage image;
             image.load(&imgBuffer, "jpeg");
 
-            QString stringName = "Client Name: " + clientName;
-            QString stringTimestamp = "Date in ms: "+ timestamp;
-
+            if (last_pixmap != NULL)
+            {
+                delete last_pixmap;
+            }
             //dibujamos el nombre del cliente y timestamp en el pixmap
-            QPixmap pixmap(QPixmap::fromImage(image));
-            QPainter painter(&pixmap);
+            last_pixmap = new QPixmap(QPixmap::fromImage(image));
+            QPainter painter(last_pixmap);
             painter.setPen(Qt::white);
             painter.setFont(QFont("Times", 15));
-            painter.drawText(0, 0,pixmap.width(), pixmap.height(), Qt::AlignTop | Qt::AlignLeft, stringName,0);
-            painter.drawText(0, 0,pixmap.width(), pixmap.height(), Qt::AlignTop | Qt::AlignRight, stringTimestamp,0);
-            //ui_->label->setPixmap(pixmap);
+            painter.drawText(0, 0,last_pixmap->width(), last_pixmap->height(), Qt::AlignTop | Qt::AlignLeft, name, 0);
+            painter.drawText(0, 0,last_pixmap->width(), last_pixmap->height(), Qt::AlignTop | Qt::AlignRight, last_timestamp, 0);
+
             protocol_state = 0;
+            emit receivedCompletePackage();
         }
         break;
     }
