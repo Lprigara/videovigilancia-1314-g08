@@ -25,8 +25,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     server_=NULL;
     setting_ = new QSettings("Leonor", "viewer"); //configura QSetting
-    key = setting_->value("key", "").toString();
-    certificate = setting_->value("certificate", "").toString();
 }
 
 MainWindow::~MainWindow()

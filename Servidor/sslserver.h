@@ -6,7 +6,8 @@
 #include <QSslCertificate>
 #include <QSslKey>
 #include <QFile>
-#include <QSslConfiguration>
+#include <QSettings>
+
 
 class Server: public QTcpServer
 {
@@ -20,12 +21,14 @@ signals:
     void signal();
 
 public slots:
-    void stepToMain();
     void disconnect();
     void connectionFailure();
 
 private:
     QSslSocket* socket;
+    QByteArray key;
+    QByteArray certificate;
+    QSettings* setting;
 };
 
 

@@ -4,6 +4,9 @@
 Server::Server(QObject *parent): QTcpServer(parent)
 {
     socket = new QSslSocket;
+    setting = new QSettings("Leonor", "viewer"); //configura QSetting
+    setting->setValue("viewer/key", "SSL/server.key");
+    setting->setValue("viewer/certificate", "SSL/server.crt");
 }
 
 Server::~Server()
@@ -13,17 +16,16 @@ Server::~Server()
 
 void Server::incomingConnection(qintptr socketDescriptor)
 {
-    connect(socket, SIGNAL(encrypted()), this, SLOT(stepToMain()));
     connect(socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(connectionFailure()));
     connect(socket, SIGNAL(disconnected()), this, SLOT(disconnect()));
 
     if(socket->setSocketDescriptor(socketDescriptor))
     {
         addPendingConnection(socket);
-            QByteArray key;
-            QByteArray cert;
+        key = setting->value("viewer/key", "").toByteArray();
+        certificate = setting->value("viewer/certificate", "").toByteArray();
 
-            QFile file_key("SSL/server.key");
+            QFile file_key(key);
 
             if(file_key.open(QIODevice::ReadOnly))
             {
@@ -36,10 +38,10 @@ void Server::incomingConnection(qintptr socketDescriptor)
                 qDebug() <<"Error key: "<< file_key.errorString();
             }
 
-            QFile file_cert("SSL/server.crt");
+            QFile file_cert(certificate);
             if(file_cert.open(QIODevice::ReadOnly))
             {
-                 cert = file_cert.readAll();
+                 certificate = file_cert.readAll();
                  file_cert.close();
                 // qDebug()<<cert;
             }
@@ -49,9 +51,8 @@ void Server::incomingConnection(qintptr socketDescriptor)
             }
 
             QSslKey ssl_key(key,QSsl::Rsa);
-            QSslCertificate ssl_cert(cert);
-            qDebug()<<ssl_key ;
-            qDebug()<<ssl_cert;
+            QSslCertificate ssl_cert(certificate);
+
             socket->setPrivateKey(ssl_key);
             socket->setLocalCertificate(ssl_cert);
             socket->setPeerVerifyMode(QSslSocket::VerifyNone);
@@ -73,10 +74,6 @@ void Server::incomingConnection(qintptr socketDescriptor)
     }
 }
 
-void Server::stepToMain(){
-    qDebug()<<"hola";
-    emit signal();
-}
 void Server::connectionFailure(){
     qDebug() << "Fallo en la conexion" << socket->errorString();
     socket->disconnect();
