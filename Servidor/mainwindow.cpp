@@ -75,8 +75,9 @@ void MainWindow::handleNewConnections()
         Client* next_client = new Client(next_connection);
 
         clientConnections.append(next_client);
+        /*
         connect(next_client, SIGNAL(disconnected()), this, SLOT(clientDisconnected()));
-        connect(next_client, SIGNAL(readyRead()), this, SLOT(readClientData()));
+       */ connect(next_client, SIGNAL(readyRead()), this, SLOT(readClientData()));
         connect(next_client, SIGNAL(receivedCompletePackage()), this, SLOT(clientCompletePackage()));
 
         qDebug() << "Opened connection with a new client";

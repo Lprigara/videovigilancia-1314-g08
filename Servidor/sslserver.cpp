@@ -3,15 +3,21 @@
 
 Server::Server(QObject *parent): QTcpServer(parent)
 {
-    socket = new QSslSocket;
+    socket = new QSslSocket;//mas q uno..
     setting = new QSettings("Leonor", "viewer"); //configura QSetting
     setting->setValue("viewer/key", "SSL/server.key");
     setting->setValue("viewer/certificate", "SSL/server.crt");
+
+
+    //pruebas, varios cliente a la vez, desconectar y reconectar
+    //prueba cifrado: conectar con netcat, ver q intenta conectarse con handshake
+    //prueba protocolo: ..nada, wiki
+    //prueba almacenamiento: ver archivos
 }
 
 Server::~Server()
 {
-    delete socket;
+    //delete socket;
 }
 
 void Server::incomingConnection(qintptr socketDescriptor)
@@ -66,7 +72,6 @@ void Server::incomingConnection(qintptr socketDescriptor)
             errors.append(QSslError::CertificateUntrusted);
 
             socket->ignoreSslErrors(errors);
-
     }
     else
     {

@@ -52,7 +52,6 @@ void Client::readByProtocol()
                 i++;
             }
             name = QString(clientName);
-            //qDebug()<<"Clientname: " << clientName;
             protocol_state = 1;
         }
         break;
@@ -69,7 +68,6 @@ void Client::readByProtocol()
                 i++;
             }
             last_timestamp = QString(timestamp);
-            //qDebug()<<"Timestamp(ms): " << last_timestamp;
             protocol_state = 2;
         }
         break;
