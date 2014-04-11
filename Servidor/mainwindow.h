@@ -18,7 +18,6 @@
 #include "sslserver.h"
 #include "acerca.h"
 #include "conexion.h"
-#include "client.h"
 
 #include <QSslSocket>
 #include <QTcpServer>
@@ -46,13 +45,7 @@ private slots:
 
     void on_actionCapturar_de_red_triggered();
 
-    void handleNewConnections();
-
-    void readClientData();
-
-    void clientDisconnected();
-
-    void clientCompletePackage();
+    void on_showNewImage();
 
 private:
     Ui::MainWindow *ui_;
@@ -60,12 +53,8 @@ private:
     QByteArray dispdefault_;
     QByteArray dispchoise_;
     QList<QByteArray> devices_;
-    QList<Client*> clientConnections;
     Server *server_;
     QString host_;
-    QString key;
-    QString certificate;
-    int port_;
 };
 
 #endif // MAINWINDOW_H

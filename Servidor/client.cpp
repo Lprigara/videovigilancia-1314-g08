@@ -8,10 +8,15 @@ Client::Client(QSslSocket* sslSocket)
 
     connect(sslSocket, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
     connect(sslSocket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
+    connect(sslSocket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(connectionFailure()));
 }
 
 Client::~Client()
 {
+    if (last_pixmap != NULL)
+    {
+        delete last_pixmap;
+    }
     delete sslSocket;
 }
 
@@ -122,4 +127,9 @@ void Client::onDisconnected()
 void Client::onReadyRead()
 {
     emit readyRead();
+}
+
+void Client::connectionFailure()
+{
+    qDebug() << "Failure of connection with client" << name << ": " << sslSocket->errorString();
 }

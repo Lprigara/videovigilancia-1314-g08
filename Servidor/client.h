@@ -29,6 +29,7 @@ private:
     QPixmap* last_pixmap;
 
 private slots:
+    void connectionFailure();
     void onDisconnected();
     void onReadyRead();
 

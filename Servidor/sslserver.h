@@ -8,6 +8,8 @@
 #include <QFile>
 #include <QSettings>
 
+#include "client.h"
+
 
 class Server: public QTcpServer
 {
@@ -17,18 +19,28 @@ public:
     Server(QObject * parent = 0);
     void incomingConnection(qintptr socketDescriptor);
     ~Server();
+    QPixmap* getPixmap();
 signals:
-    void signal();
+    void showNewImage();
+
 
 public slots:
-    void disconnect();
-    void connectionFailure();
+
+    void readClientData();
+
+    void clientDisconnected();
+
+    void clientCompletePackage();
 
 private:
     QSslSocket* socket;
     QByteArray key;
     QByteArray certificate;
     QSettings* setting;
+    QPixmap* last_pixmap;
+
+
+    QList<Client*> clientConnections;
 };
 
 

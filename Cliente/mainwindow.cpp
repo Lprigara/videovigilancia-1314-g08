@@ -16,6 +16,7 @@ MainWindow::MainWindow(QWidget *parent) :
     camera_=NULL;
     viewfinder_=NULL;
     captureB_=NULL;
+    sslSocket_=NULL;
 
 
     setting_ = new QSettings("Leonor", "viewer"); //configura QSetting
@@ -26,14 +27,7 @@ MainWindow::MainWindow(QWidget *parent) :
     dispchoise_ = setting_->value("viewer/deviceChoise",dispdefault_).toByteArray();
 
     //QtNetwork
-    sslSocket_ = new QSslSocket(this);
     connectedServer_=0;
-
-    connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(disconnect()));
-    connect(sslSocket_, SIGNAL(error(QAbstractSocket::SocketError)),this, SLOT(socketError()));
-    sslSocket_->setProtocol(QSsl::SslV3);
-    sslSocket_->ignoreSslErrors();
-
 
 }
 
@@ -45,7 +39,7 @@ MainWindow::~MainWindow()
     delete viewfinder_;
     delete setting_;
     delete captureB_;
-    delete sslSocket_;
+    if (sslSocket_ != NULL) delete sslSocket_;
 }
 
 
@@ -86,11 +80,24 @@ void MainWindow::on_actionCapturar_triggered()
 
      connect(captureB_, SIGNAL(signalImage(QImage)), this, SLOT(image1(QImage)));
 
-     //Conectarnos al servidor
+     //Connect to the server
+
      host_ = setting_->value("viewer/host", "127.0.0.1").toString();
      port_ = setting_->value("viewer/port", 9600).toInt();
-     //como la conexion es asincrona, esperamos a que se conecte.
+
      qDebug() << host_ << port_;
+
+     if (sslSocket_ != NULL)
+     {
+         delete sslSocket_;
+         qDebug() << "Restarting socket..";
+     }
+
+     sslSocket_ = new QSslSocket(this);
+     connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(disconnect()));
+     connect(sslSocket_, SIGNAL(error(QAbstractSocket::SocketError)),this, SLOT(socketError()));
+     sslSocket_->setProtocol(QSsl::SslV3);
+     sslSocket_->ignoreSslErrors();
 
      connect(sslSocket_, SIGNAL(encrypted()), this, SLOT(connected()));
      sslSocket_->connectToHostEncrypted(host_, port_);
