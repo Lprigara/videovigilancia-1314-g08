@@ -143,8 +143,8 @@ void Client::readByProtocol()
             painter.setPen(Qt::white);
             painter.setFont(QFont("Times", 15));
             painter.drawText(0, 0,last_pixmap_->width(), last_pixmap_->height(), Qt::AlignTop | Qt::AlignLeft, name_, 0);
-            painter.drawText(0, 0,last_pixmap_->width(), last_pixmap_->height(), Qt::AlignTop | Qt::AlignRight, last_timestamp_, 0);
-            painter.drawText(0, 0,last_pixmap_->width(), last_pixmap_->height(), Qt::AlignTop | Qt::AlignLeft, protocolName_, 0);
+            painter.drawText(0, 0,last_pixmap_->width(), last_pixmap_->height(), Qt::AlignBottom | Qt::AlignRight, last_timestamp_, 0);
+            painter.drawText(0, 0,last_pixmap_->width(), last_pixmap_->height(), Qt::AlignTop | Qt::AlignRight, protocolName_, 0);
 
             protocol_state_ = 0;
             emit receivedCompletePackage();
