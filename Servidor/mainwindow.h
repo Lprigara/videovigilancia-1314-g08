@@ -13,11 +13,9 @@
 
 #include <QString>
 
-#include "preferencias.h"
 #include "capturebuffer.h"
 #include "sslserver.h"
 #include "acerca.h"
-#include "conexion.h"
 
 #include <QSslSocket>
 #include <QTcpServer>
@@ -40,8 +38,6 @@ private slots:
     void on_actionSalir_triggered();
 
     void on_actionAcerca_de_triggered();
-
-    void on_actionPreferencias_triggered();
 
     void on_actionCapturar_de_red_triggered();
 

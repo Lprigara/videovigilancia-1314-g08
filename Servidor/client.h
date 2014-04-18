@@ -6,6 +6,7 @@
 #include <QBuffer>
 #include <QPainter>
 #include <QPixmap>
+#include <QtEndian>
 
 class Client : public QObject
 {
@@ -21,12 +22,13 @@ public:
     void readByProtocol();
 
 private:
-    QSslSocket* sslSocket;
-    int protocol_state;
-    int next_image_size;
-    QString name;
-    QString last_timestamp;
-    QPixmap* last_pixmap;
+    QSslSocket* sslSocket_;
+    int protocol_state_;
+    int next_image_size_;
+    QString name_;
+    QString last_timestamp_;
+    QString protocolName_;
+    QPixmap* last_pixmap_;
 
 private slots:
     void connectionFailure();

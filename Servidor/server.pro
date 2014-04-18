@@ -16,22 +16,16 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    preferencias.cpp \
     capturebuffer.cpp \
-    conexion.cpp \
     acerca.cpp \
     sslserver.cpp \
     client.cpp
 
 HEADERS  += mainwindow.h \
-    preferencias.h \
     capturebuffer.h \
-    conexion.h \
     acerca.h \
     sslserver.h \
     client.h
 
 FORMS    += mainwindow.ui \
-    preferencias.ui \
-    conexion.ui \
     acerca.ui

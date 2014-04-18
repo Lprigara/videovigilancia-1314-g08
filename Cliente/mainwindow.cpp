@@ -29,6 +29,8 @@ MainWindow::MainWindow(QWidget *parent) :
     //QtNetwork
     connectedServer_=0;
 
+    //bool para no reconectar al desconectarse
+    exit_=false;
 }
 
 MainWindow::~MainWindow()
@@ -64,10 +66,9 @@ void MainWindow::on_actionAbrir_triggered()
 
 void MainWindow::on_actionCapturar_triggered()
 { 
-  //  qDebug()<<dispdefault_<<dispchoise_;
      if(operator!= (dispdefault_,dispchoise_)){  
-        camera_->stop();
-        delete camera_;
+        //camera_->stop();
+        //delete camera_;
         camera_ = new QCamera(dispchoise_);
      }
      else{
@@ -96,7 +97,6 @@ void MainWindow::on_actionCapturar_triggered()
      sslSocket_ = new QSslSocket(this);
      connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(disconnect()));
      connect(sslSocket_, SIGNAL(error(QAbstractSocket::SocketError)),this, SLOT(socketError()));
-     sslSocket_->setProtocol(QSsl::SslV3);
      sslSocket_->ignoreSslErrors();
 
      connect(sslSocket_, SIGNAL(encrypted()), this, SLOT(connected()));
@@ -106,22 +106,22 @@ void MainWindow::on_actionCapturar_triggered()
 
 void MainWindow::image1(QImage image)
 {
-    //Modificar (pintar) la imagen para imprimirla en el label
-    QTime time;
-    QTime currenTime= time.currentTime();
-    QString stringTime=currenTime.toString(); //hora actual pasado a cadena para poder pintarlo
-
-    QPixmap pixmap(QPixmap::fromImage(image));
-
-    QPainter painter(&pixmap); //convertimos el pixmap en un objeto QPainter para poder dibujar en el
-    painter.setPen(Qt::white);
-    painter.setFont(QFont("Arial", 15));
-    painter.drawText(0, 0,pixmap.width(), pixmap.height(), Qt::AlignBottom, stringTime,0);
-
-    ui_->label->setPixmap(pixmap); //establece la imagen pintada en el label
-
     if(connectedServer_)
     {
+        //Modificar (pintar) la imagen para imprimirla en el label
+        QTime time;
+        QTime currenTime= time.currentTime();
+        QString stringTime=currenTime.toString(); //hora actual pasado a cadena para poder pintarlo
+
+        QPixmap pixmap(QPixmap::fromImage(image));
+
+        QPainter painter(&pixmap); //convertimos el pixmap en un objeto QPainter para poder dibujar en el
+        painter.setPen(Qt::white);
+        painter.setFont(QFont("Arial", 15));
+        painter.drawText(0, 0,pixmap.width(), pixmap.height(), Qt::AlignBottom, stringTime,0);
+
+        ui_->label->setPixmap(pixmap); //establece la imagen pintada en el label
+
         //Codificar la imagen para enviarla por la red
         QBuffer buffer;
         QImageWriter writer(&buffer, "jpeg"); //Para controlar el nivel de compresión, el de gamma o algunos otros parámetros específicos del formato, tendremos que emplear un objeto QImageWriter.
@@ -140,18 +140,23 @@ void MainWindow::image1(QImage image)
 
         qint64 timestamp = QDateTime::currentMSecsSinceEpoch(); //tiempo en milisegundos desde EPOC hasta el instante de la imagen
 
+        QByteArray protocol;
+        protocol.append("GLP/1.0");
+
         //Envio de los distintos campos separados por \n
-        sslSocket_->write(name);
+        sslSocket_->write(qToLittleEndian(protocol));
         sslSocket_->write("\n");
-        sslSocket_->write(QByteArray::number(timestamp));
+        sslSocket_->write(qToLittleEndian(name));
         sslSocket_->write("\n");
-        sslSocket_->write(QByteArray::number(sizeImg));
+        sslSocket_->write(qToLittleEndian(QByteArray::number(timestamp)));
         sslSocket_->write("\n");
-        sslSocket_->write(bytes);
+        sslSocket_->write(qToLittleEndian(QByteArray::number(sizeImg)));
+        sslSocket_->write("\n");
+        sslSocket_->write(qToLittleEndian(bytes));
     }
     else
     {
-        qDebug()<<"Error al enviar mensaje";
+        return;
     }
 }
 
@@ -164,8 +169,11 @@ void MainWindow::connected()
 
 void MainWindow::disconnect()
 {
-    qDebug() << "Disconnected from server";
     connectedServer_ = 0;
+    qDebug() << "Disconnected from server";
+    if(!exit_){
+        reconnect();
+    }
 }
 
 void MainWindow::socketError()
@@ -194,17 +202,13 @@ void MainWindow::on_stop_clicked()
 
 void MainWindow::on_exit_clicked()
 {
-    if(connectedServer_){
-        sslSocket_->disconnect();
-    }
+    exit_=true;
     qApp->quit(); //qApp = QApplication del main
 }
 
 void MainWindow::on_actionSalir_triggered()
 {
-    if(connectedServer_){
-        sslSocket_->disconnect();
-    }
+    exit_=true;
     qApp->quit();
 }
 
@@ -230,3 +234,27 @@ void MainWindow::on_actionConexion_triggered()
     Conexion conexion(this);
     conexion.exec();
 }
+
+void MainWindow::reconnect()
+{
+    QTimer *timer = new QTimer(this);
+    // QTimer::singleShot(7000, this, SLOT(reconnect()));
+    timer->start(7000);
+
+    if(sslSocket_->state() == QAbstractSocket::UnconnectedState)
+    {
+        sslSocket_->connectToHostEncrypted(host_, port_);
+        sslSocket_->ignoreSslErrors();
+        sslSocket_->waitForEncrypted(8000);
+
+        qDebug()<<"Reconecting client...";
+    }
+    if(sslSocket_->state() == QAbstractSocket::ConnectedState)
+    {
+        timer->stop();
+        qDebug()<<"Reconnected Client Succesfull";
+    }
+    connect(sslSocket_, SIGNAL(encrypted()), this, SLOT(connected()));
+    connect(timer,SIGNAL(timeout()),this,SLOT(reconnect()));
+}
+

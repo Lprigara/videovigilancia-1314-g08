@@ -3,16 +3,16 @@
 
 Server::Server(QObject *parent): QTcpServer(parent)
 {
-    setting = new QSettings("Leonor", "viewer"); //configura QSetting
-    setting->setValue("viewer/key", "SSL/server.key");
-    setting->setValue("viewer/certificate", "SSL/server.crt");
-    last_pixmap = NULL;
+    setting_ = new QSettings("Leonor", "viewer"); //configura QSetting
+    setting_->setValue("viewer/key", "SSL/server.key");
+    setting_->setValue("viewer/certificate", "SSL/server.crt");
+    last_pixmap_ = NULL;
 }
 
 Server::~Server()
 {
-    if (last_pixmap != NULL) delete last_pixmap;
-    qDeleteAll(clientConnections);
+    if (last_pixmap_ != NULL) delete last_pixmap_;
+    qDeleteAll(clientConnections_);
 }
 
 void Server::incomingConnection(qintptr socketDescriptor)
@@ -22,41 +22,37 @@ void Server::incomingConnection(qintptr socketDescriptor)
     if(new_connection->setSocketDescriptor(socketDescriptor))
     {
         //Initialize SSL connection (key + certificate + protocol)
-        key = setting->value("viewer/key", "").toByteArray();
-        certificate = setting->value("viewer/certificate", "").toByteArray();
+        key_ = setting_->value("viewer/key", "").toByteArray();
+        certificate_ = setting_->value("viewer/certificate", "").toByteArray();
 
-        QFile file_key(key);
+        QFile file_key(key_);
 
         if(file_key.open(QIODevice::ReadOnly))
         {
-            key = file_key.readAll();
+            key_ = file_key.readAll();
             file_key.close();
-            //qDebug()<<key;
         }
         else
         {
             qDebug() <<"Error key: "<< file_key.errorString();
         }
 
-        QFile file_cert(certificate);
+        QFile file_cert(certificate_);
         if(file_cert.open(QIODevice::ReadOnly))
         {
-             certificate = file_cert.readAll();
+             certificate_ = file_cert.readAll();
              file_cert.close();
-            // qDebug()<<cert;
         }
         else
         {
             qDebug() <<"Error cert: "<< file_cert.errorString();
         }
 
-        QSslKey ssl_key(key,QSsl::Rsa);
-        QSslCertificate ssl_cert(certificate);
+        QSslKey ssl_key(key_,QSsl::Rsa);
+        QSslCertificate ssl_cert(certificate_);
 
         new_connection->setPrivateKey(ssl_key);
         new_connection->setLocalCertificate(ssl_cert);
-        new_connection->setPeerVerifyMode(QSslSocket::VerifyNone);
-        new_connection->setProtocol(QSsl::SslV3);
 
         qDebug()<<"Starting server encryption...";
         new_connection->startServerEncryption();
@@ -75,7 +71,7 @@ void Server::incomingConnection(qintptr socketDescriptor)
         connect(new_client, SIGNAL(readyRead()), this, SLOT(readClientData()));
         connect(new_client, SIGNAL(receivedCompletePackage()), this, SLOT(clientCompletePackage()));
 
-        clientConnections.append(new_client);
+        clientConnections_.append(new_client);
         qDebug() << "Opened connection with a new client";
     }
     else
@@ -100,7 +96,7 @@ void Server::clientDisconnected(){
     if (!client)
         return;
 
-    clientConnections.removeAll(client);
+    clientConnections_.removeAll(client);
     client->deleteLater();
     qDebug() << "Closed connection with client " << client->getName();
 }
@@ -112,13 +108,13 @@ void Server::clientCompletePackage()
     if (!client)
         return;
 
-    if (clientConnections.indexOf(client) == 0) //only show images of the first client
+    if (clientConnections_.indexOf(client) == 0) //only show images of the first client
     {
-        if (last_pixmap != NULL)
+        if (last_pixmap_ != NULL)
         {
-            delete last_pixmap;
+            delete last_pixmap_;
         }
-        last_pixmap = new QPixmap(*client->getPixmap());
+        last_pixmap_ = new QPixmap(*client->getPixmap());
         emit showNewImage();
     }
     else
@@ -129,5 +125,5 @@ void Server::clientCompletePackage()
 
 QPixmap* Server::getPixmap()
 {
-    return last_pixmap;
+    return last_pixmap_;
 }

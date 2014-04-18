@@ -35,12 +35,6 @@ void MainWindow::on_actionAcerca_de_triggered()
     acercaDe.exec();
 }
 
-void MainWindow::on_actionPreferencias_triggered()
-{
-   Preferencias prefe(this);
-   prefe.exec();
-}
-
 void MainWindow::on_actionCapturar_de_red_triggered()
 {
     //Delete the server if it already exists

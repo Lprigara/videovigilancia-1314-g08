@@ -33,14 +33,11 @@ public slots:
     void clientCompletePackage();
 
 private:
-    QSslSocket* socket;
-    QByteArray key;
-    QByteArray certificate;
-    QSettings* setting;
-    QPixmap* last_pixmap;
-
-
-    QList<Client*> clientConnections;
+    QByteArray key_;
+    QByteArray certificate_;
+    QSettings* setting_;
+    QPixmap* last_pixmap_;
+    QList<Client*> clientConnections_;
 };
 
 

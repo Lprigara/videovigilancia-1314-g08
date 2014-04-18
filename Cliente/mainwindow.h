@@ -19,6 +19,7 @@
 #include <QSslSocket>
 
 #include <QDateTime>
+#include <QtEndian>
 
 namespace Ui {
 class MainWindow;
@@ -63,6 +64,8 @@ private slots:
 
     void socketError();
 
+    void reconnect();
+
 private:
     Ui::MainWindow *ui_;
     QMovie *movie_;
@@ -77,6 +80,7 @@ private:
     bool connectedServer_;
     QString host_;
     int port_;
+    bool exit_;
 };
 
 #endif // MAINWINDOW_H
