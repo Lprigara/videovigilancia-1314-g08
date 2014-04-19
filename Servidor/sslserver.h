@@ -33,6 +33,8 @@ public slots:
     void clientCompletePackage();
 
 private:
+    int frameCounter;
+    int frameSkipCounter;
     QByteArray key_;
     QByteArray certificate_;
     QSettings* setting_;

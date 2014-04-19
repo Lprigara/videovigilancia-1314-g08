@@ -7,6 +7,8 @@ Server::Server(QObject *parent): QTcpServer(parent)
     setting_->setValue("viewer/key", "SSL/server.key");
     setting_->setValue("viewer/certificate", "SSL/server.crt");
     last_pixmap_ = NULL;
+    frameCounter = 0;
+    frameSkipCounter = 0;
 }
 
 Server::~Server()
@@ -115,6 +117,35 @@ void Server::clientCompletePackage()
             delete last_pixmap_;
         }
         last_pixmap_ = new QPixmap(*client->getPixmap());
+
+        //Save client image in folder (IMG/CLIENTNAME/YYYY-MM-DD/CLIENTNAME_DATE_XXXX.png)
+        frameSkipCounter++;
+        if (frameSkipCounter == 20) //Save only every 20th frame
+        {
+            frameSkipCounter = 0;
+            QString clientName = client->getName();
+            if (clientName == "") clientName = "UNNAMED";
+            QString date = QDateTime::currentDateTime().toString("yyyy-MM-dd");
+
+            QDir dir("IMG/" + clientName + "/" + date);
+            if (!dir.exists()) {
+                dir.mkpath(".");
+            }
+
+            QString filename = clientName + "_" + date + "_" + QString("%1").arg(frameCounter, 4, 16, QChar('0')).toUpper() + ".png";
+            QString fullpath = dir.path() + "/" + filename;
+            if (last_pixmap_->save(fullpath))
+            {
+                qDebug() << "Saved image to" << fullpath;
+            }
+            else
+                qDebug() << "Error saving image";
+
+            frameCounter++;
+        }
+
+
+        //Emit signal to show image in server
         emit showNewImage();
     }
     else
