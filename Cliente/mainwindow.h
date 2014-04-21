@@ -81,6 +81,7 @@ private:
     QString host_;
     int port_;
     bool exit_;
+    QString clientName_;
 };
 
 #endif // MAINWINDOW_H

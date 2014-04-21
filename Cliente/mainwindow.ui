@@ -26,68 +26,118 @@
      <height>0</height>
     </size>
    </property>
-   <layout class="QGridLayout" name="gridLayout">
-    <item row="3" column="0">
-     <widget class="QPushButton" name="start">
-      <property name="text">
-       <string>Iniciar/Pausar</string>
-      </property>
-     </widget>
-    </item>
-    <item row="3" column="1">
-     <widget class="QPushButton" name="stop">
-      <property name="text">
-       <string>Parar</string>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="0" colspan="4">
-     <widget class="QLabel" name="label">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Ignored" vsizetype="Ignored">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>715</width>
-        <height>317</height>
-       </size>
-      </property>
-      <property name="text">
-       <string/>
-      </property>
-      <property name="scaledContents">
-       <bool>true</bool>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-    </item>
-    <item row="3" column="3">
-     <widget class="QCheckBox" name="autoinicio">
-      <property name="text">
-       <string>Auto-inicio</string>
-      </property>
-     </widget>
-    </item>
-    <item row="3" column="2">
-     <widget class="QPushButton" name="exit">
-      <property name="text">
-       <string>Salir</string>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="3">
-     <widget class="QPushButton" name="pushButton">
-      <property name="text">
-       <string>reconect</string>
-      </property>
-     </widget>
-    </item>
-   </layout>
+   <widget class="QPushButton" name="start">
+    <property name="geometry">
+     <rect>
+      <x>9</x>
+      <y>359</y>
+      <width>161</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Iniciar/Pausar</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="stop">
+    <property name="geometry">
+     <rect>
+      <x>184</x>
+      <y>359</y>
+      <width>161</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Parar</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>9</x>
+      <y>34</y>
+      <width>691</width>
+      <height>311</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Ignored" vsizetype="Ignored">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>715</width>
+      <height>317</height>
+     </size>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="scaledContents">
+     <bool>true</bool>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="autoinicio">
+    <property name="geometry">
+     <rect>
+      <x>533</x>
+      <y>360</y>
+      <width>89</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Auto-inicio</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="exit">
+    <property name="geometry">
+     <rect>
+      <x>359</x>
+      <y>359</y>
+      <width>161</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Salir</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_2">
+    <property name="geometry">
+     <rect>
+      <x>-80</x>
+      <y>10</y>
+      <width>169</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>169</width>
+      <height>0</height>
+     </size>
+    </property>
+    <property name="text">
+     <string>                         Nombre:</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="clientName">
+    <property name="geometry">
+     <rect>
+      <x>80</x>
+      <y>10</y>
+      <width>113</width>
+      <height>23</height>
+     </rect>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">

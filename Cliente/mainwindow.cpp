@@ -31,13 +31,15 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //bool para no reconectar al desconectarse
     exit_=false;
+
+
 }
 
 MainWindow::~MainWindow()
 {
     delete ui_;
     delete movie_;
-    delete camera_;
+    if (camera_ != NULL) delete camera_;
     delete viewfinder_;
     delete setting_;
     delete captureB_;
@@ -66,9 +68,19 @@ void MainWindow::on_actionAbrir_triggered()
 
 void MainWindow::on_actionCapturar_triggered()
 { 
+    //Set name client from ui->lineEdit
+    //setting_->setValue("viewer/client", ui_->clientName->text());
+    clientName_ = ui_->clientName->text();
+
+    if (camera_ != NULL)
+    {
+        camera_->stop();
+        delete camera_;
+    }
+
      if(operator!= (dispdefault_,dispchoise_)){  
-        //camera_->stop();
-        //delete camera_;
+       // camera_->stop();
+       // delete camera_;
         camera_ = new QCamera(dispchoise_);
      }
      else{
@@ -134,9 +146,9 @@ void MainWindow::image1(QImage image)
         QByteArray bytes = buffer.buffer();
         int sizeImg=bytes.size(); //tamaño de la imagen
 
-        QString clientName = setting_->value("Client", "Leo").toString();
+        //clientName_ = setting_->value("viewer/client").toString();
         QByteArray name;
-        name.append(clientName); //nombre del cliente convertido a String para poder enviarlo
+        name.append(clientName_); //nombre del cliente convertido a String para poder enviarlo
 
         qint64 timestamp = QDateTime::currentMSecsSinceEpoch(); //tiempo en milisegundos desde EPOC hasta el instante de la imagen
 
@@ -227,6 +239,7 @@ void MainWindow::on_actionPreferencias_triggered()
 {
    Preferencias prefe(this);
    prefe.exec();
+   dispchoise_ = setting_->value("viewer/deviceChoise",dispdefault_).toByteArray();
 }
 
 void MainWindow::on_actionConexion_triggered()
@@ -247,12 +260,12 @@ void MainWindow::reconnect()
         sslSocket_->ignoreSslErrors();
         sslSocket_->waitForEncrypted(8000);
 
-        qDebug()<<"Reconecting client...";
+        qDebug()<<"Reconecting client: "<< clientName_ ;
     }
     if(sslSocket_->state() == QAbstractSocket::ConnectedState)
     {
         timer->stop();
-        qDebug()<<"Reconnected Client Succesfull";
+        qDebug()<<"Reconnected client succesful";
     }
     connect(sslSocket_, SIGNAL(encrypted()), this, SLOT(connected()));
     connect(timer,SIGNAL(timeout()),this,SLOT(reconnect()));
