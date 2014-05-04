@@ -21,6 +21,11 @@
 #include <QDateTime>
 #include <QtEndian>
 
+#include "motiondetector.h"
+
+
+typedef std::vector<std::vector<cv::Point> > ContoursType;
+
 namespace Ui {
 class MainWindow;
 }
@@ -32,6 +37,10 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
+
+signals:
+    void readyForMotionDetection(QImage img);
+    void resetMotionDetection();
 
 private slots:
     void on_exit_clicked();
@@ -66,6 +75,8 @@ private slots:
 
     void reconnect();
 
+    void motionDetected(std::vector<std::vector<int> > contours);
+
 private:
     Ui::MainWindow *ui_;
     QMovie *movie_;
@@ -82,6 +93,9 @@ private:
     int port_;
     bool exit_;
     QString clientName_;
+    MotionDetector* mDetect_;
+    QImage *currentImage_;
+    QThread *mThread_;
 };
 
 #endif // MAINWINDOW_H

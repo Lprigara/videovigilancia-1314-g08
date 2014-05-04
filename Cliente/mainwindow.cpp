@@ -17,6 +17,16 @@ MainWindow::MainWindow(QWidget *parent) :
     viewfinder_=NULL;
     captureB_=NULL;
     sslSocket_=NULL;
+    currentImage_=NULL;
+
+    //Motion detection
+    mThread_ = new QThread();
+    mDetect_ = new MotionDetector();
+    mDetect_->moveToThread(mThread_);
+    connect(this, SIGNAL(resetMotionDetection()), mDetect_, SLOT(reset()));
+    connect(this, SIGNAL(readyForMotionDetection(QImage)), mDetect_, SLOT(detectMotion(QImage)));
+    connect(mDetect_, SIGNAL(signalResult(std::vector<std::vector<int> >)), this, SLOT(motionDetected(std::vector<std::vector<int> >)));
+    mThread_->start();
 
 
     setting_ = new QSettings("Leonor", "viewer"); //configura QSetting
@@ -37,13 +47,19 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
+    if (currentImage_ != NULL) delete currentImage_;
     delete ui_;
     delete movie_;
     if (camera_ != NULL) delete camera_;
     delete viewfinder_;
     delete setting_;
-    delete captureB_;
+    if (mDetect_ != NULL) delete mDetect_;
+    if (captureB_ != NULL) delete captureB_;
     if (sslSocket_ != NULL) delete sslSocket_;
+
+    mThread_->quit();
+    mThread_->wait();
+    delete mThread_;
 }
 
 
@@ -72,6 +88,7 @@ void MainWindow::on_actionCapturar_triggered()
     //setting_->setValue("viewer/client", ui_->clientName->text());
     clientName_ = ui_->clientName->text();
 
+    //(Re)create camera
     if (camera_ != NULL)
     {
         camera_->stop();
@@ -87,7 +104,13 @@ void MainWindow::on_actionCapturar_triggered()
         camera_ = new QCamera(dispdefault_);
      }
 
+     //Reset motion detector
+     emit resetMotionDetection();
+
+     //(Re)create capturebuffer
+     if (captureB_ != NULL) delete captureB_;
      captureB_ = new captureBuffer;
+
      camera_->setViewfinder(captureB_);
      camera_->setCaptureMode(QCamera::CaptureViewfinder);
 
@@ -118,21 +141,40 @@ void MainWindow::on_actionCapturar_triggered()
 
 void MainWindow::image1(QImage image)
 {
+
+    qDebug() << "IMAGE";
+
+    //Store image
+    if (currentImage_ != NULL) delete currentImage_;
+    currentImage_ = new QImage(image); //Note that this image is overwritten faster than the results of the motiondetection come in
+
+    //Motion detection
+    emit readyForMotionDetection(image); //sends image to motiondetection thread for processing and waits for result in other slot
+}
+
+void MainWindow::motionDetected(std::vector<std::vector<int> > contours)
+{
+    qDebug() << "RETURNED MOTION";
+
+    qDebug() << "Found" << contours.size() << "contourpoints";
+
     if(connectedServer_)
     {
-        //Modificar (pintar) la imagen para imprimirla en el label
+        //Get current time as string
         QTime time;
         QTime currenTime= time.currentTime();
-        QString stringTime=currenTime.toString(); //hora actual pasado a cadena para poder pintarlo
+        QString stringTime=currenTime.toString();
 
-        QPixmap pixmap(QPixmap::fromImage(image));
+        //Convert image to pixmap and use painter to draw on it
+        QPixmap pixmap(QPixmap::fromImage(*currentImage_));
 
-        QPainter painter(&pixmap); //convertimos el pixmap en un objeto QPainter para poder dibujar en el
+        QPainter painter(&pixmap);
         painter.setPen(Qt::white);
         painter.setFont(QFont("Arial", 15));
         painter.drawText(0, 0,pixmap.width(), pixmap.height(), Qt::AlignBottom, stringTime,0);
 
-        ui_->label->setPixmap(pixmap); //establece la imagen pintada en el label
+        //Update pixmap in label
+        ui_->label->setPixmap(pixmap);
 
         //Codificar la imagen para enviarla por la red
         QBuffer buffer;
@@ -165,10 +207,6 @@ void MainWindow::image1(QImage image)
         sslSocket_->write(qToLittleEndian(QByteArray::number(sizeImg)));
         sslSocket_->write("\n");
         sslSocket_->write(qToLittleEndian(bytes));
-    }
-    else
-    {
-        return;
     }
 }
 

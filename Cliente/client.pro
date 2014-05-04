@@ -19,15 +19,23 @@ SOURCES += main.cpp\
     preferencias.cpp \
     capturebuffer.cpp \
     conexion.cpp \
-    acerca.cpp
+    acerca.cpp \
+    motiondetector.cpp
 
 HEADERS  += mainwindow.h \
     preferencias.h \
     capturebuffer.h \
     conexion.h \
-    acerca.h
+    acerca.h \
+    motiondetector.h
 
 FORMS    += mainwindow.ui \
     preferencias.ui \
     conexion.ui \
     acerca.ui
+
+#include qtopencv
+include(QtOpenCV.pri)
+
+#include opencv
+add_opencv_modules(core video imgproc)
