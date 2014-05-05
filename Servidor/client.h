@@ -7,6 +7,7 @@
 #include <QPainter>
 #include <QPixmap>
 #include <QtEndian>
+#include <QVector>
 
 class Client : public QObject
 {
@@ -25,6 +26,9 @@ private:
     QSslSocket* sslSocket_;
     int protocol_state_;
     int next_image_size_;
+    int next_bb_count_;
+    int bb_counter_;
+    QVector<QRect> last_boundingboxes_;
     QString name_;
     QString last_timestamp_;
     QString protocolName_;

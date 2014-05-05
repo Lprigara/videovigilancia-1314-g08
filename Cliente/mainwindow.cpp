@@ -17,7 +17,6 @@ MainWindow::MainWindow(QWidget *parent) :
     viewfinder_=NULL;
     captureB_=NULL;
     sslSocket_=NULL;
-    currentImage_=NULL;
 
     //Motion detection
     mThread_ = new QThread();
@@ -25,7 +24,7 @@ MainWindow::MainWindow(QWidget *parent) :
     mDetect_->moveToThread(mThread_);
     connect(this, SIGNAL(resetMotionDetection()), mDetect_, SLOT(reset()));
     connect(this, SIGNAL(readyForMotionDetection(QImage)), mDetect_, SLOT(detectMotion(QImage)));
-    connect(mDetect_, SIGNAL(signalResult(std::vector<std::vector<int> >)), this, SLOT(motionDetected(std::vector<std::vector<int> >)));
+    connect(mDetect_, SIGNAL(signalResult(std::vector<QRect >, QImage)), this, SLOT(motionDetected(std::vector<QRect >, QImage)));
     mThread_->start();
 
 
@@ -47,19 +46,21 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
-    if (currentImage_ != NULL) delete currentImage_;
+    mThread_->quit();
+    mThread_->wait();
+    delete mDetect_;
+    delete mThread_;
+
+
+
     delete ui_;
     delete movie_;
     if (camera_ != NULL) delete camera_;
     delete viewfinder_;
     delete setting_;
-    if (mDetect_ != NULL) delete mDetect_;
     if (captureB_ != NULL) delete captureB_;
     if (sslSocket_ != NULL) delete sslSocket_;
 
-    mThread_->quit();
-    mThread_->wait();
-    delete mThread_;
 }
 
 
@@ -141,40 +142,32 @@ void MainWindow::on_actionCapturar_triggered()
 
 void MainWindow::image1(QImage image)
 {
-
-    qDebug() << "IMAGE";
-
-    //Store image
-    if (currentImage_ != NULL) delete currentImage_;
-    currentImage_ = new QImage(image); //Note that this image is overwritten faster than the results of the motiondetection come in
-
     //Motion detection
     emit readyForMotionDetection(image); //sends image to motiondetection thread for processing and waits for result in other slot
 }
 
-void MainWindow::motionDetected(std::vector<std::vector<int> > contours)
+void MainWindow::motionDetected(std::vector<QRect > boundingRects, QImage image)
 {
-    qDebug() << "RETURNED MOTION";
+    //Get current time as string
+    QTime time;
+    QTime currenTime= time.currentTime();
+    QString stringTime=currenTime.toString();
 
-    qDebug() << "Found" << contours.size() << "contourpoints";
+    //Convert image to pixmap and use painter to draw on it
+    QPixmap pixmap(QPixmap::fromImage(image));
+    QPainter painter(&pixmap);
+    painter.setPen(Qt::white);
+    painter.setFont(QFont("Arial", 15));
+    painter.drawText(0, 0,pixmap.width(), pixmap.height(), Qt::AlignBottom, stringTime,0);
+
+    //Update pixmap in label
+    ui_->label->setPixmap(pixmap);
 
     if(connectedServer_)
     {
-        //Get current time as string
-        QTime time;
-        QTime currenTime= time.currentTime();
-        QString stringTime=currenTime.toString();
 
-        //Convert image to pixmap and use painter to draw on it
-        QPixmap pixmap(QPixmap::fromImage(*currentImage_));
-
-        QPainter painter(&pixmap);
-        painter.setPen(Qt::white);
-        painter.setFont(QFont("Arial", 15));
-        painter.drawText(0, 0,pixmap.width(), pixmap.height(), Qt::AlignBottom, stringTime,0);
-
-        //Update pixmap in label
-        ui_->label->setPixmap(pixmap);
+        int bbCount = boundingRects.size();
+        if (bbCount <= 0) return; //Only send images with changes
 
         //Codificar la imagen para enviarla por la red
         QBuffer buffer;
@@ -198,15 +191,38 @@ void MainWindow::motionDetected(std::vector<std::vector<int> > contours)
         protocol.append("GLP/1.0");
 
         //Envio de los distintos campos separados por \n
-        sslSocket_->write(qToLittleEndian(protocol));
+        sslSocket_->write(protocol);
         sslSocket_->write("\n");
-        sslSocket_->write(qToLittleEndian(name));
+
+        sslSocket_->write(name);
         sslSocket_->write("\n");
-        sslSocket_->write(qToLittleEndian(QByteArray::number(timestamp)));
+
+        sslSocket_->write(QByteArray::number(timestamp));
         sslSocket_->write("\n");
-        sslSocket_->write(qToLittleEndian(QByteArray::number(sizeImg)));
+
+        sslSocket_->write(QByteArray::number(sizeImg));
         sslSocket_->write("\n");
-        sslSocket_->write(qToLittleEndian(bytes));
+
+        sslSocket_->write(bytes);
+
+        sslSocket_->write(QByteArray::number(bbCount));
+        sslSocket_->write("\n");
+
+        for (std::vector<QRect >::iterator it = boundingRects.begin() ; it != boundingRects.end(); ++it)
+        {
+            QRect r = *it;
+            QByteArray rBA;
+            rBA.append(QByteArray::number(r.x()));
+            rBA.append("_");
+            rBA.append(QByteArray::number(r.y()));
+            rBA.append("_");
+            rBA.append(QByteArray::number(r.width()));
+            rBA.append("_");
+            rBA.append(QByteArray::number(r.height()));
+
+            sslSocket_->write(rBA);
+            sslSocket_->write("\n");
+        }
     }
 }
 

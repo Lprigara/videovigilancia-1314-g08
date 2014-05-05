@@ -18,7 +18,7 @@ public:
     ~MotionDetector();
 
 signals:
-    void signalResult(std::vector<std::vector<int> > contours);
+    void signalResult(std::vector<QRect > boundingRects, QImage image);
 
 public slots:
     void detectMotion(QImage img);

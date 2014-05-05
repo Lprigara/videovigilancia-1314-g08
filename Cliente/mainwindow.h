@@ -75,7 +75,7 @@ private slots:
 
     void reconnect();
 
-    void motionDetected(std::vector<std::vector<int> > contours);
+    void motionDetected(std::vector<QRect > boundingRects, QImage image);
 
 private:
     Ui::MainWindow *ui_;
@@ -94,7 +94,6 @@ private:
     bool exit_;
     QString clientName_;
     MotionDetector* mDetect_;
-    QImage *currentImage_;
     QThread *mThread_;
 };
 

@@ -56,6 +56,7 @@ void Client::readByProtocol()
                 protocolName[i]=aux[i];
                 i++;
             }
+
             qFromLittleEndian(protocolName);
             if(protocolName != "GLP/1.0")
             {
@@ -84,6 +85,7 @@ void Client::readByProtocol()
                 clientName[i]=aux[i];
                 i++;
             }
+
             qFromLittleEndian(clientName);
             name_ = QString(clientName);
             protocol_state_ = 2;
@@ -101,6 +103,7 @@ void Client::readByProtocol()
                 timestamp[i]=aux[i];
                 i++;
             }
+
             qFromLittleEndian(timestamp);
             last_timestamp_ = QString(timestamp);
             protocol_state_ = 3;
@@ -118,6 +121,7 @@ void Client::readByProtocol()
                 sizeIm[i]=aux[i];
                 i++;
             }
+
             qFromLittleEndian(sizeIm);
             next_image_size_ = sizeIm.toInt(); //convertimos el QByteArray del tamaño de la imagen en un objeto tipo int para indicarle al read siguiente cuantos caracteres hay que leer.
             protocol_state_ = 4;
@@ -137,20 +141,84 @@ void Client::readByProtocol()
             {
                 delete last_pixmap_;
             }
-            //dibujamos el nombre del cliente y timestamp en el pixmap
+            //update the stored pixmap with the new image
             last_pixmap_ = new QPixmap(QPixmap::fromImage(image));
-            QPainter painter(last_pixmap_);
-            painter.setPen(Qt::white);
-            painter.setFont(QFont("Times", 15));
-            painter.drawText(0, 0,last_pixmap_->width(), last_pixmap_->height(), Qt::AlignTop | Qt::AlignLeft, name_, 0);
-            painter.drawText(0, 0,last_pixmap_->width(), last_pixmap_->height(), Qt::AlignBottom | Qt::AlignRight, last_timestamp_, 0);
-            painter.drawText(0, 0,last_pixmap_->width(), last_pixmap_->height(), Qt::AlignTop | Qt::AlignRight, protocolName_, 0);
 
-            protocol_state_ = 0;
-            emit receivedCompletePackage();
+            protocol_state_ = 5;
+        }
+        break;
+    case 5: //ROI bounding rect count
+        if (sslSocket_->canReadLine())
+        {
+            QByteArray bbCount;
+            bbCount.clear();
+            aux.clear();
+
+            aux = sslSocket_->readLine();
+            int i=0;
+            while(aux[i] != '\n')
+            {
+                bbCount[i]=aux[i];
+                i++;
+            }
+
+            next_bb_count_ = bbCount.toInt();
+            bb_counter_ = 0;
+
+            protocol_state_ = 6;
+        }
+
+        break;
+    case 6: //ROI bounding rects
+
+        if (sslSocket_->canReadLine())
+        {
+            //Get data
+            QByteArray data;
+            aux.clear();
+            aux = sslSocket_->readLine();
+            int i=0;
+            while(aux[i] != '\n')
+            {
+                data[i]=aux[i];
+                i++;
+            }
+
+            //reset boundingbox vector
+            if (bb_counter_ == 0) {
+                last_boundingboxes_.clear();
+            }
+
+
+            QStringList rectData = QString(data).split("_");
+            QRect rect(rectData[0].toInt(), rectData[1].toInt(), rectData[2].toInt(), rectData[3].toInt());
+            last_boundingboxes_.push_back(rect);
+
+            //last bounding box received -> draw data
+            if(bb_counter_ == next_bb_count_ - 1)
+            {
+                protocol_state_ = 0;
+
+                QPainter painter(last_pixmap_);
+                painter.setPen(Qt::green);
+
+                painter.drawRects(last_boundingboxes_);
+
+                painter.setPen(Qt::white);
+                painter.setFont(QFont("Times", 15));
+                painter.drawText(0, 0,last_pixmap_->width(), last_pixmap_->height(), Qt::AlignTop | Qt::AlignLeft, name_, 0);
+                painter.drawText(0, 0,last_pixmap_->width(), last_pixmap_->height(), Qt::AlignBottom | Qt::AlignRight, last_timestamp_, 0);
+                painter.drawText(0, 0,last_pixmap_->width(), last_pixmap_->height(), Qt::AlignTop | Qt::AlignRight, protocolName_, 0);
+
+                //qDebug()<<"READ:"<<"LAST BB Height"<<last_rect_->height();
+                emit receivedCompletePackage();
+            }
+
+            bb_counter_++;
         }
         break;
     }
+
 }
 
 void Client::onDisconnected()

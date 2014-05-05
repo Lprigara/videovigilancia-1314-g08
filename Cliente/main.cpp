@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
     MainWindow w;
     w.show();
 
-    qRegisterMetaType<std::vector<std::vector<int> > >("std::vector<std::vector<int> >");
+    qRegisterMetaType<std::vector<QRect > >("std::vector<QRect >");
 
     return a.exec();
 }
