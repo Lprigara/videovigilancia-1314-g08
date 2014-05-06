@@ -1,0 +1,5 @@
+Server:
+p 9600 k /home/georg/QtBuild/soa/SSL/server.key c /home/georg/QtBuild/soa/SSL/server.crt u georg g georg o /home/georg/QtBuild/soa/IMG
+
+Client:
+d 0 p 9600 o 127.0.0.1 n Georg
