@@ -6,6 +6,11 @@ Client::Client(QSslSocket* sslSocket)
     protocol_state_ = 0;
     last_image_ = NULL;
 
+#ifdef BENCHMARK
+    timer_running_ = false;
+    timer_ = new QTime();
+#endif
+
     connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
     connect(sslSocket_, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
     connect(sslSocket_, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(connectionFailure()));
@@ -18,6 +23,9 @@ Client::~Client()
         delete last_image_;
     }
     delete sslSocket_;
+#ifdef BENCHMARK
+    delete timer_;
+#endif
 }
 
 QSslSocket* Client::getSocket()
@@ -36,6 +44,13 @@ QImage* Client::getImage()
 
 void Client::readByProtocol()
 {
+#ifdef BENCHMARK
+    if (!timer_running_)
+    {
+        timer_->start();
+        timer_running_ = true;
+    }
+#endif
     QByteArray clientName;
     QByteArray timestamp;
     QByteArray sizeIm;
@@ -192,6 +207,11 @@ connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
 
                //Received all data..
 
+#ifdef BENCHMARK
+               int runtime = timer_->elapsed();
+               qDebug() << "Received whole package in" << runtime << "ms" << "with" << next_bb_count_ << "ROI.";
+               timer_running_ = false;
+#endif
                emit receivedCompletePackage();
            }
 

@@ -1,6 +1,8 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
+//#define BENCHMARK
+
 #include <QSslSocket>
 #include <QObject>
 #include <QBuffer>
@@ -31,6 +33,11 @@ private:
     QString last_timestamp_;
     QString protocolName_;
     QImage* last_image_;
+
+#ifdef BENCHMARK
+    QTime* timer_;
+    bool timer_running_;
+#endif
 
 private slots:
     void connectionFailure();
