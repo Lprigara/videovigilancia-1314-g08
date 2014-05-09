@@ -1,48 +1,91 @@
-#include "client.h"
+#include "clientthread.h"
 
-Client::Client(QSslSocket* sslSocket)
+ClientThread::ClientThread(qintptr ID, QByteArray key, QByteArray cert, QString outputDestination, QObject *parent) :
+    QThread(parent)
 {
-    this->sslSocket_ = sslSocket;
-    protocol_state_ = 0;
+    ID_ = ID;
+    outputDestination_ = outputDestination;
+    key_ = key;
+    cert_ = cert;
+    frameCounter_ = 0;
     last_image_ = NULL;
 
 #ifdef BENCHMARK
     timer_running_ = false;
     timer_ = new QTime();
 #endif
-
-    connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
-    connect(sslSocket_, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
-    connect(sslSocket_, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(connectionFailure()));
 }
 
-Client::~Client()
+ClientThread::~ClientThread()
 {
-    if (last_image_ != NULL)
-    {
-        delete last_image_;
-    }
-    delete sslSocket_;
 #ifdef BENCHMARK
     delete timer_;
 #endif
 }
 
-QSslSocket* Client::getSocket()
+void ClientThread::run()
 {
-    return sslSocket_;
+
+    //Create SSL socket with socketdescriptor ID
+    sslSocket_ = new QSslSocket();
+
+    if(sslSocket_->setSocketDescriptor(ID_))
+    {
+        QFile file_key(key_);
+
+        if(file_key.open(QIODevice::ReadOnly))
+        {
+            key_ = file_key.readAll();
+            file_key.close();
+        }
+        else
+        {
+            qDebug() <<"Error key: "<< file_key.errorString();
+        }
+
+        QFile file_cert(cert_);
+        if(file_cert.open(QIODevice::ReadOnly))
+        {
+             cert_ = file_cert.readAll();
+             file_cert.close();
+        }
+        else
+        {
+            qDebug() <<"Error cert: "<< file_cert.errorString();
+        }
+
+        QSslKey ssl_key(key_,QSsl::Rsa);
+        QSslCertificate ssl_cert(cert_);
+
+        sslSocket_->setPrivateKey(ssl_key);
+        sslSocket_->setLocalCertificate(ssl_cert);
+
+        qDebug()<<"Starting server encryption...";
+        sslSocket_->startServerEncryption();
+
+        QList<QSslError> errors;
+        errors.append(QSslError::SelfSignedCertificate);
+        errors.append(QSslError::CertificateUntrusted);
+
+        sslSocket_->ignoreSslErrors(errors);
+
+        qDebug() << "Opened connection with a new client (ID = " << ID_;
+    }
+
+
+    //Init protocol state
+    protocol_state_ = 0;
+
+    //Connect signals
+    connect(sslSocket_, SIGNAL(readyRead()), this, SLOT(readByProtocol()));
+    connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(disconnected()));
+    connect(sslSocket_, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(connectionFailure()));
+
+    //Make this thread a loop waiting for exit()
+    exec();
 }
 
-QString Client::getName()
-{
-    return name_;
-}
-QImage* Client::getImage()
-{
-    return last_image_;
-}
-
-void Client::readByProtocol()
+void ClientThread::readByProtocol()
 {
 #ifdef BENCHMARK
     if (!timer_running_)
@@ -51,18 +94,16 @@ void Client::readByProtocol()
         timer_running_ = true;
     }
 #endif
-    QByteArray clientName;
-    QByteArray timestamp;
-    QByteArray sizeIm;
+
     QByteArray aux;
-    QByteArray protocolName;
-connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
+
     switch (protocol_state_)
     {
     case 0: //Version and name of protocol
         if(sslSocket_->canReadLine())
         {
             aux.clear();
+            QByteArray protocolName;
             protocolName.clear();
             aux = sslSocket_->readLine(); //lee hasta que encuentre un caracter \n
             int i=0;
@@ -74,7 +115,7 @@ connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
             if(protocolName != "GLP/1.0")
             {
                 qDebug()<<"Intrusion. Invalid Protocol";
-                onDisconnected();
+                disconnect();
 
                 return;
             }
@@ -89,6 +130,7 @@ connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
         if (sslSocket_->canReadLine())
         {
             aux.clear();
+            QByteArray clientName;
             clientName.clear();
             //guardamos la linea en un objeto QByteArray, que luego recorreremos para imprimir su contenido sin el caracter \n
             aux = sslSocket_->readLine(); //lee hasta que encuentre un caracter \n
@@ -102,10 +144,12 @@ connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
             protocol_state_ = 2;
         }
         break;
+
      case 2: //Timestamp
         if (sslSocket_->canReadLine())
         {
             aux.clear();
+            QByteArray timestamp;
             timestamp.clear();
             aux = sslSocket_->readLine();
             int i=0;
@@ -118,11 +162,13 @@ connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
             protocol_state_ = 3;
         }
         break;
+
      case 3: //Image size
         if (sslSocket_->canReadLine())
         {
-            sizeIm.clear();
             aux.clear();
+            QByteArray sizeIm;
+            sizeIm.clear();
             aux = sslSocket_->readLine(); //size=6
             int i=0;
             while(aux[i] != '\n')
@@ -134,6 +180,7 @@ connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
             protocol_state_ = 4;
         }
         break;
+
     case 4: //image
        if(sslSocket_->bytesAvailable() >= next_image_size_)
        {
@@ -153,6 +200,7 @@ connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
            protocol_state_ = 5;
        }
        break;
+
    case 5: //ROI bounding rect count
        if (sslSocket_->canReadLine())
        {
@@ -173,10 +221,9 @@ connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
 
            protocol_state_ = 6;
        }
-
        break;
-   case 6: //ROI bounding rects
 
+   case 6: //ROI bounding rects
        if (sslSocket_->canReadLine())
        {
            //Get data
@@ -195,7 +242,6 @@ connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
                last_boundingboxes_.clear();
            }
 
-
            QStringList rectData = QString(data).split("_");
            QRect rect(rectData[0].toInt(), rectData[1].toInt(), rectData[2].toInt(), rectData[3].toInt());
            last_boundingboxes_.push_back(rect);
@@ -212,7 +258,29 @@ connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
                qDebug() << "Received whole package in" << runtime << "ms" << "with" << next_bb_count_ << "ROI.";
                timer_running_ = false;
 #endif
-               emit receivedCompletePackage();
+
+               //Save client image in folder (%outputdestination%/CLIENTNAME/YYYY-MM-DD/CLIENTNAME_DATE_XXXX.png)
+
+               QString clientName = name_;
+               if (clientName == "") clientName = "UNNAMED";
+               QString date = QDateTime::currentDateTime().toString("yyyy-MM-dd");
+
+               QDir dir(outputDestination_ + clientName + "/" + date);
+               if (!dir.exists()) {
+                   dir.mkpath(".");
+               }
+
+               QString filename = clientName + "_" + date + "_" + QString("%1").arg(frameCounter_, 4, 16, QChar('0')).toUpper() + ".png";
+               QString fullpath = dir.path() + "/" + filename;
+
+               if (last_image_->save(fullpath))
+               {
+                   qDebug() << "Saved image to" << fullpath;
+               }
+               else
+                   qDebug() << "Error saving image";
+
+               frameCounter_++;
            }
 
            bb_counter_++;
@@ -221,17 +289,15 @@ connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
    }
 }
 
-void Client::onDisconnected()
+void ClientThread::disconnected()
 {
-    emit disconnected();
+    qDebug() << ID_ << " Disconnected";
+    sslSocket_->deleteLater();
+    exit(0);
 }
 
-void Client::onReadyRead()
+void ClientThread::connectionFailure()
 {
-    emit readyRead();
+    qDebug() << "Failure of connection with client" << name_ << "(ID =)"<< ID_<<": " << sslSocket_->errorString();
 }
 
-void Client::connectionFailure()
-{
-    qDebug() << "Failure of connection with client" << name_ << ": " << sslSocket_->errorString();
-}

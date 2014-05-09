@@ -19,14 +19,14 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
     capturebuffer.cpp \
-    client.cpp \
     console.cpp \
-    server.cpp
+    server.cpp \
+    clientthread.cpp
 
 HEADERS  += \
     capturebuffer.h \
-    client.h \
     console.h \
-    server.h
+    server.h \
+    clientthread.h
 
 FORMS    +=
