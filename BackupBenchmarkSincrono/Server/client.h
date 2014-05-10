@@ -1,7 +1,7 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
-//#define BENCHMARK
+#define BENCHMARK
 
 #include <QSslSocket>
 #include <QObject>
@@ -37,6 +37,9 @@ private:
 #ifdef BENCHMARK
     QTime* timer_;
     bool timer_running_;
+    std::vector<int> ms_list_;
+    std::vector<int> roi_list_;
+    int benchmarkCounter_;
 #endif
 
 private slots:

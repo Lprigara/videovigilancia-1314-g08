@@ -1,7 +1,7 @@
 #ifndef CLIENTTHREAD_H
 #define CLIENTTHREAD_H
 
-//#define BENCHMARK
+#define BENCHMARK
 
 #include <QThread>
 #include <QSslSocket>
@@ -29,10 +29,13 @@ public slots:
     void connectionFailure();
 
 private:
-    #ifdef BENCHMARK
-        QTime* timer_;
-        bool timer_running_;
-    #endif
+#ifdef BENCHMARK
+    QTime* timer_;
+    bool timer_running_;
+    std::vector<int> ms_list_;
+    std::vector<int> roi_list_;
+    int benchmarkCounter_;
+#endif
     QSslSocket* sslSocket_;
     QString outputDestination_;
     QByteArray key_, cert_;

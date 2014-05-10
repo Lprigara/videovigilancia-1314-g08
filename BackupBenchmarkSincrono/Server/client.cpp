@@ -9,6 +9,7 @@ Client::Client(QSslSocket* sslSocket)
 #ifdef BENCHMARK
     timer_running_ = false;
     timer_ = new QTime();
+    benchmarkCounter_ = 0;
 #endif
 
     connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
@@ -209,8 +210,42 @@ connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
 
 #ifdef BENCHMARK
                int runtime = timer_->elapsed();
-               qDebug() << "Received whole package in" << runtime << "ms" << "with" << next_bb_count_ << "ROI.";
+               qDebug() << "Received whole package in" << runtime << "ms" << "with" << next_bb_count_ << "ROI. (" << benchmarkCounter_+1<<"/ 50 )";
                timer_running_ = false;
+               ms_list_.push_back(runtime);
+               roi_list_.push_back(last_boundingboxes_.size());
+               benchmarkCounter_++;
+               if (benchmarkCounter_ == 49)
+               {
+                   int ms_max, ms_min, ms_median;
+                   float ms_avg = 0;
+                   int roi_max, roi_min, roi_median;
+                   float roi_avg = 0;
+
+                   ms_max = ms_list_[0]; roi_max = roi_list_[0];
+                   ms_min = ms_list_[0]; roi_min = roi_list_[0];
+                   ms_median = ms_list_[25]; roi_median = roi_list_[25];
+
+                   for (int i = 0; i < ms_list_.size(); i++)
+                   {
+                       if (ms_max < ms_list_[i]) ms_max = ms_list_[i];
+                       if (roi_max < roi_list_[i]) roi_max = roi_list_[i];
+                       if (ms_min > ms_list_[i]) ms_min = ms_list_[i];
+                       if (roi_min > roi_list_[i]) roi_min = roi_list_[i];
+                       ms_avg += ms_list_[i];
+                       roi_avg += roi_list_[i];
+                   }
+                   ms_avg /= ms_list_.size();
+                   roi_avg /= ms_list_.size();
+
+                   qDebug() << "Benchmark result for 50 frames";
+                   qDebug() << "MS: min"<<ms_min<<"max"<<ms_max<<"median"<<ms_median<<"avg"<<ms_avg;
+                   qDebug() << "ROI: min"<<roi_min<<"max"<<roi_max<<"median"<<roi_median<<"avg"<<roi_avg;
+
+                   benchmarkCounter_ = 0;
+                   ms_list_.clear();
+                   roi_list_.clear();
+               }
 #endif
                emit receivedCompletePackage();
            }
