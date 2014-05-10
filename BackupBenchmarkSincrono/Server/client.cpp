@@ -224,7 +224,7 @@ connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
 
                    ms_max = ms_list_[0]; roi_max = roi_list_[0];
                    ms_min = ms_list_[0]; roi_min = roi_list_[0];
-                   ms_median = ms_list_[25]; roi_median = roi_list_[25];
+                   //ms_median = ms_list_[25]; roi_median = roi_list_[25]; //needs to be a sorted vector
 
                    for (int i = 0; i < ms_list_.size(); i++)
                    {
@@ -239,8 +239,8 @@ connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
                    roi_avg /= ms_list_.size();
 
                    qDebug() << "Benchmark result for 50 frames";
-                   qDebug() << "MS: min"<<ms_min<<"max"<<ms_max<<"median"<<ms_median<<"avg"<<ms_avg;
-                   qDebug() << "ROI: min"<<roi_min<<"max"<<roi_max<<"median"<<roi_median<<"avg"<<roi_avg;
+                   qDebug() << "MS: min"<<ms_min<<"max"<<ms_max<<"avg"<<ms_avg;
+                   qDebug() << "ROI: min"<<roi_min<<"max"<<roi_max<<"avg"<<roi_avg;
 
                    benchmarkCounter_ = 0;
                    ms_list_.clear();
