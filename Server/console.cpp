@@ -42,6 +42,52 @@ Console::Console(int port, QByteArray key, QByteArray cert, QString outputDestin
     connect(sigIntNotifier, SIGNAL(activated(int)), this,
         SLOT(handleSigInt()));
 
+    ////////////////////////////////////////
+    db_ = QSqlDatabase::addDatabase("QSQLITE");
+
+    #ifdef Q_OS_LINUX
+        // NOTE: We have to store database file into user home folder in Linux
+        QString path(QDir::home().path());
+        path.append(QDir::separator()).append("my.db.sqlite");
+        path = QDir::toNativeSeparators(path);
+        db_.setDatabaseName(path);
+    #else
+        // NOTE: File exists in the application private folder, in Symbian Qt implementation
+        db_.setDatabaseName("my.db.sqlite");
+    #endif
+        db_.setDatabaseName("my.db.sqlite");
+
+    if (!db_.open())
+    QMessageBox::critical(NULL, tr("Error"), tr("No se pudo acceder a los datos."));
+
+        QSqlQuery query;
+
+        query.exec("create table if not exists Datos"
+
+                   "(id integer primary key autoincrement, "
+
+                   "client varchar(40), "
+
+                   "timestamp long, "
+
+                   "image varchar(200))");
+
+        QSqlQuery query2;
+        query2.exec("create table if not exists ROI"
+
+                    "(id integer primary key, "
+
+                    "x long, "
+
+                    "y long, "
+
+                    "h long, "
+
+                    "w long, "
+
+                    "link integer )");
+
+    ////////////////////////////////////////
     on_actionCapturar_de_red_triggered();
 }
 

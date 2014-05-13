@@ -11,6 +11,8 @@
 #include <QDir>
 #include <QBuffer>
 #include <QImage>
+#include <QSqlDatabase>
+#include <QSqlQuery>
 
 class ClientThread : public QThread
 {
@@ -50,6 +52,11 @@ private:
     QString last_timestamp_;
     QString protocolName_;
     QImage* last_image_;
+    QString fullpath_ ;
+
+    QSqlDatabase db_;
+    QSqlQuery query_;
+    QSqlQuery query2_;
 
 };
 

@@ -1,8 +1,12 @@
 #include "clientthread.h"
+#include <QMessageBox>
+#include <QtSql/QSqlDatabase>
+#include <QSqlRecord>
 
 ClientThread::ClientThread(qintptr ID, QByteArray key, QByteArray cert, QString outputDestination, QObject *parent) :
     QThread(parent)
 {
+
     ID_ = ID;
     outputDestination_ = outputDestination;
     key_ = key;
@@ -275,9 +279,9 @@ void ClientThread::readByProtocol()
                benchmarkCounter_++;
                if (benchmarkCounter_ == 49)
                {
-                   int ms_max, ms_min, ms_median;
+                   int ms_max, ms_min;
                    float ms_avg = 0;
-                   int roi_max, roi_min, roi_median;
+                   int roi_max, roi_min;
                    float roi_avg = 0;
 
                    ms_max = ms_list_[0]; roi_max = roi_list_[0];
@@ -318,22 +322,77 @@ void ClientThread::readByProtocol()
                }
 
                QString filename = clientName + "_" + date + "_" + QString("%1").arg(frameCounter_, 4, 16, QChar('0')).toUpper() + ".png";
-               QString fullpath = dir.path() + "/" + filename;
+               fullpath_ = dir.path() + "/" + filename;
 
-               if (last_image_->save(fullpath))
+               if (last_image_->save(fullpath_))
                {
-                   qDebug() << "Saved image to" << fullpath;
+                   qDebug() << "Saved image to" << fullpath_;
                }
                else
                    qDebug() << "Error saving image";
 
                frameCounter_++;
+
+
+               ///////////////////////////////////////////////////////////////////////////////////
+
+               QSqlQuery query;
+               QSqlQuery("PRAGMA journal_mode = OFF");
+               QSqlQuery("PRAGMA locking_mode = EXCLUSIVE");
+               QSqlQuery("PRAGMA synchronous = OFF");
+
+               query.prepare("INSERT INTO Datos (client, timestamp, image) "
+                             "VALUES (:client, :timestamp, :image)");
+
+               qDebug()<<"guardando nameclient";
+               query.bindValue(":client", name_);
+               qDebug()<<"guardando timestamp";
+               query.bindValue(":timestamp", last_timestamp_);
+               qDebug()<<"guardando imageroute";
+               query.bindValue(":image", fullpath_);
+
+               query.exec();
+
+
+               QSqlQuery q("select id from Datos");
+
+               QSqlRecord rec = q.record();
+
+               int nameCol = rec.indexOf("id");
+
+               q.last(); //Recupera la última fila de la lista de resultados y posiciona allí el objeto q.
+
+               QString ultimoId = q.value(nameCol).toString();
+
+               foreach(QRect rect, last_boundingboxes_)
+               {
+
+                   QSqlQuery query2;
+                   query2.prepare("INSERT INTO ROI (x, y, h, w, link) "
+                                  "VALUES (:x, :y, :h, :w, :link)");
+
+                   qDebug()<<"Guardando link";
+                   query2.bindValue(":link", ultimoId.toInt());
+                   qDebug()<<"Guardando x";
+                   query2.bindValue(":x", rect.x());
+                   qDebug()<<"Guardando y";
+                   query2.bindValue(":y", rect.y());
+                   qDebug()<<"Guardando heigth";
+                   query2.bindValue(":h", rect.height());
+                   qDebug()<<"Guardando width";
+                   query2.bindValue(":w", rect.width());
+
+                   query2.exec();
+
+               }
            }
 
            bb_counter_++;
        }
        break;
    }
+
+
 }
 
 void ClientThread::disconnected()

@@ -19,6 +19,10 @@
 #include <signal.h>
 #include <unistd.h>
 
+#include <QSqlQuery>
+#include <QSqlDatabase>
+#include <QMessageBox>
+
 int setupUnixSignalHandlers();
 
 
@@ -54,6 +58,7 @@ private:
     int port_;
     QByteArray key_;
     QByteArray cert_;
+    QSqlDatabase db_;
 
     // Pares de sockets. Un par por señal a manejar
     static int sigHupSd[2];
