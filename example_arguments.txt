@@ -1,5 +1,8 @@
 Server:
 p 9600 k /home/georg/QtBuild/soa/SSL/server.key c /home/georg/QtBuild/soa/SSL/server.crt u georg g georg o /home/georg/QtBuild/soa/IMG
 
+
+p 9600 k /home/leonor/Escritorio/soa/SSL/server.key c /home/leonor/Escritorio/soa/SSL/server.crt u leonor g leonor o /home/leonor/Escritorio/soa/build-server-Desktop_Qt_5_1_1_GCC_64bit-Debug/IMG
+
 Client:
 d 0 p 9600 o 127.0.0.1 n Georg
