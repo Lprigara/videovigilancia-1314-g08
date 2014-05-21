@@ -227,6 +227,8 @@ void Console::motionDetected(std::vector<QRect > boundingRects, QImage image)
             sslSocket_->write(rBA);
             sslSocket_->write("\n");
         }
+
+        qDebug()<<"Sent package. #ROI ="<<boundingRects.size();
     }
 }
 

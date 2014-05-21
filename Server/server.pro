@@ -8,6 +8,7 @@ QT       += core gui
 QT       += multimedia multimediawidgets
 QT       += network
 QT       += gui
+QT       += sql
 
 
 TARGET = viewer

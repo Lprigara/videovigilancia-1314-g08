@@ -1,8 +1,4 @@
 #include "clientthread.h"
-#include <QMessageBox>
-#include <QtSql/QSqlDatabase>
-#include <QSqlRecord>
-
 ClientThread::ClientThread(qintptr ID, QByteArray key, QByteArray cert, QString outputDestination, QObject *parent) :
     QThread(parent)
 {
@@ -74,23 +70,27 @@ void ClientThread::run()
 
         sslSocket_->ignoreSslErrors(errors);
 
-        qDebug() << "Opened connection with a new client (ID = " << ID_;
+        qDebug() << "Opened connection with a new client ( ID = " << ID_ << ")";
     }
 
 
     //Init protocol state
     protocol_state_ = 0;
 
-    //Connect signals
-    connect(sslSocket_, SIGNAL(readyRead()), this, SLOT(readByProtocol()));
-    connect(sslSocket_, SIGNAL(disconnected()), this, SLOT(disconnected()));
-    connect(sslSocket_, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(connectionFailure()));
+    //Loop for receiving packages
+    while(sslSocket_->waitForReadyRead(30000))
+    {
+        //Read data and check for error
+        bool error = readByProtocol();
+        if (error) break;
+    }
 
-    //Make this thread a loop waiting for exit()
-    exec();
+    //Close connection
+    qDebug()<<"Connection with client ( ID ="<<ID_<<") was closed";
+    delete sslSocket_;
 }
 
-void ClientThread::readByProtocol()
+bool ClientThread::readByProtocol()
 {
 #ifdef BENCHMARK
     if (!timer_running_)
@@ -122,7 +122,7 @@ void ClientThread::readByProtocol()
                 qDebug()<<"Intrusion. Invalid Protocol";
                 disconnect();
 
-                return;
+                return true;
             }
             else{
                 protocolName_ = QString(protocolName);
@@ -258,7 +258,7 @@ void ClientThread::readByProtocol()
            {
                qDebug() << "RECTDATA ERROR:" << QString(data);
                qDebug() << "BB_COUNTER_" << bb_counter_ << "NEXT_BB_COUNT_" << next_bb_count_ << "VECTSIZE"<<last_boundingboxes_.size();
-               protocol_state_ = 0; return;
+               protocol_state_ = 0; return true;
            }
            QRect rect(rectData[0].toInt(), rectData[1].toInt(), rectData[2].toInt(), rectData[3].toInt());
            last_boundingboxes_.push_back(rect);
@@ -344,11 +344,11 @@ void ClientThread::readByProtocol()
                query.prepare("INSERT INTO Datos (client, timestamp, image) "
                              "VALUES (:client, :timestamp, :image)");
 
-               qDebug()<<"guardando nameclient";
+               //qDebug()<<"guardando nameclient";
                query.bindValue(":client", name_);
-               qDebug()<<"guardando timestamp";
+               //qDebug()<<"guardando timestamp";
                query.bindValue(":timestamp", last_timestamp_);
-               qDebug()<<"guardando imageroute";
+               //qDebug()<<"guardando imageroute";
                query.bindValue(":image", fullpath_);
 
                query.exec();
@@ -371,20 +371,22 @@ void ClientThread::readByProtocol()
                    query2.prepare("INSERT INTO ROI (x, y, h, w, link) "
                                   "VALUES (:x, :y, :h, :w, :link)");
 
-                   qDebug()<<"Guardando link";
+                   //qDebug()<<"Guardando link";
                    query2.bindValue(":link", ultimoId.toInt());
-                   qDebug()<<"Guardando x";
+                   //qDebug()<<"Guardando x";
                    query2.bindValue(":x", rect.x());
-                   qDebug()<<"Guardando y";
+                   //qDebug()<<"Guardando y";
                    query2.bindValue(":y", rect.y());
-                   qDebug()<<"Guardando heigth";
+                   //qDebug()<<"Guardando heigth";
                    query2.bindValue(":h", rect.height());
-                   qDebug()<<"Guardando width";
+                   //qDebug()<<"Guardando width";
                    query2.bindValue(":w", rect.width());
 
                    query2.exec();
 
                }
+
+               qDebug()<<"Stored values in database.";
            }
 
            bb_counter_++;
@@ -392,18 +394,19 @@ void ClientThread::readByProtocol()
        break;
    }
 
+    if (protocol_state_ == 4)
+    {
+        if (sslSocket_->bytesAvailable() >= next_image_size_)
+        {
+            bool error = readByProtocol(); //call this method again to process more data
+            if (error) return true;
+        }
+    }
+    else if (sslSocket_->canReadLine())
+    {
+        bool error = readByProtocol();
+        if (error) return true;
+    }
 
+    return false;
 }
-
-void ClientThread::disconnected()
-{
-    qDebug() << ID_ << " Disconnected";
-    sslSocket_->deleteLater();
-    exit(0);
-}
-
-void ClientThread::connectionFailure()
-{
-    qDebug() << "Failure of connection with client" << name_ << "(ID =)"<< ID_<<": " << sslSocket_->errorString();
-}
-

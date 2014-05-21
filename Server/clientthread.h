@@ -13,6 +13,10 @@
 #include <QImage>
 #include <QSqlDatabase>
 #include <QSqlQuery>
+#include <QMessageBox>
+#include <QtSql/QSqlDatabase>
+#include <QSqlRecord>
+
 
 class ClientThread : public QThread
 {
@@ -26,9 +30,6 @@ public:
 signals:
 
 public slots:
-    void readByProtocol();
-    void disconnected();
-    void connectionFailure();
 
 private:
 #ifdef BENCHMARK
@@ -57,6 +58,9 @@ private:
     QSqlDatabase db_;
     QSqlQuery query_;
     QSqlQuery query2_;
+
+
+    bool readByProtocol();
 
 };
 
