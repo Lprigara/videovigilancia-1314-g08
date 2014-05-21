@@ -11,7 +11,7 @@ QT       += gui
 QT       += sql
 
 
-TARGET = viewer
+TARGET = server
 CONFIG += console
 CONFIG -= app_bundle
 
@@ -30,4 +30,46 @@ HEADERS  += \
     server.h \
     clientthread.h
 
-FORMS    +=
+unix {          # Esta configuración específica de Linux y UNIX
+    # Variables
+    #
+    isEmpty(PREFIX) {
+        PREFIX = /usr
+    }
+    BINDIR  = $$PREFIX/bin
+    DATADIR = $$PREFIX/share
+    CONFDIR = /etc
+    SCRIPT = /etc/init.d
+
+    isEmpty(VARDIR) {
+        VARDIR  = /var/lib/$${TARGET}
+    }
+
+    DEFINES += APP_DATADIR=\\\"$$DATADIR\\\"
+    DEFINES += APP_VARDIR=\\\"$$VARDIR\\\"
+    DEFINES += APP_CONFFILE=\\\"$$CONFDIR/$${TARGET}.ini\\\"
+
+    # Install
+    #
+    INSTALLS += target ssl config vardir script
+
+    ## Instalar ejecutable
+    target.path = $$BINDIR
+
+    ## Instalar archivo de configuración
+    config.path = $$CONFDIR
+    config.files += $${TARGET}.ini
+
+    ##Instalar configuracion ssl
+    ssl.path = $$DATADIR/SSL
+    ssl.files += SSL/server.crt \
+                 SSL/server.key
+
+    ## Crear directorio de archivos variables
+    vardir.path = $$VARDIR
+    vardir.commands = :
+
+    ##Script
+    script.path = $$SCRIPT
+    script.files += $${TARGET}.sh
+}

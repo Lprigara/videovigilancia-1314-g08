@@ -89,7 +89,6 @@ Console::~Console()
 //    delete movie_;
     if (camera_ != NULL) delete camera_;
     delete viewfinder_;
-    delete setting_;
     delete captureB_;
     if (sslSocket_ != NULL) delete sslSocket_;
 
@@ -361,10 +360,10 @@ void Console::handleSigTerm()
     ::read(sigTermSd[1], &tmp, sizeof(tmp));
 
     sslSocket_->disconnect();
-    sslSocket_->deleteLater();
+    //sslSocket_->deleteLater();
     qDebug("Disconnected");
-   // QCoreApplication::quit();
-    deleteLater();
+    QCoreApplication::quit();
+   //deleteLater();
 
     sigTermNotifier->setEnabled(true);
 }
@@ -378,10 +377,10 @@ void Console::handleSigInt()
 
     qDebug("Sigint");
     sslSocket_->disconnect();
-    sslSocket_->deleteLater();
+    //sslSocket_->deleteLater();
     qDebug("Disconnected");
-    //QCoreApplication::quit();
-    deleteLater();
+    QCoreApplication::quit();
+    //deleteLater();
 
     sigHupNotifier->setEnabled(true);
 }

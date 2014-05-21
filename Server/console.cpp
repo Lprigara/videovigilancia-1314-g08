@@ -45,17 +45,10 @@ Console::Console(int port, QByteArray key, QByteArray cert, QString outputDestin
     ////////////////////////////////////////
     db_ = QSqlDatabase::addDatabase("QSQLITE");
 
-    #ifdef Q_OS_LINUX
-        // NOTE: We have to store database file into user home folder in Linux
-        QString path(QDir::home().path());
-        path.append(QDir::separator()).append("my.db.sqlite");
-        path = QDir::toNativeSeparators(path);
-        db_.setDatabaseName(path);
-    #else
-        // NOTE: File exists in the application private folder, in Symbian Qt implementation
-        db_.setDatabaseName("my.db.sqlite");
-    #endif
-        db_.setDatabaseName("my.db.sqlite");
+    QString path(outputDestination_);
+    path.append(QDir::separator()).append("my.db.sqlite");
+    path = QDir::toNativeSeparators(path);
+    db_.setDatabaseName(path);
 
     if (!db_.open())
     QMessageBox::critical(NULL, tr("Error"), tr("No se pudo acceder a los datos."));
@@ -196,9 +189,9 @@ void Console::handleSigTerm()
     ::read(sigTermSd[1], &tmp, sizeof(tmp));
 
     server_->disconnect();
-    server_->deleteLater();
-    //QCoreApplication::quit();
-    deleteLater();
+    //server_->deleteLater();
+    QCoreApplication::quit();
+    //deleteLater();
 
     sigTermNotifier->setEnabled(true);
 }
@@ -213,7 +206,7 @@ void Console::handleSigInt()
     char tmp;
     ::read(sigIntSd[1], &tmp, sizeof(tmp));
     server_->disconnect();
-    server_->deleteLater();
+    //server_->deleteLater();
     QCoreApplication::quit();
    // deleteLater();
 

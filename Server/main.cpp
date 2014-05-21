@@ -11,12 +11,24 @@
 #include <unistd.h>
 #include <pwd.h>
 #include <grp.h>
+#include <QSettings>
 
 using namespace std;
 int main(int argc, char *argv[])
 {
     bool daemon=0;
     QByteArray port, key, cert, uid, gid, outputdest;
+
+    QSettings settings(APP_CONFFILE, QSettings::IniFormat);
+    //QSettings settings("/etc/server.ini", QSettings::IniFormat);
+
+    port= settings.value("conf/port", 9600).toByteArray();
+    key= settings.value("conf/key", APP_DATADIR + QString("/SSL/server.key")).toByteArray();
+    cert= settings.value("conf/cert", APP_DATADIR + QString("/SSL/server.crt")).toByteArray();
+    uid= settings.value("conf/uid").toByteArray();
+    gid= settings.value("conf/gid").toByteArray();
+    outputdest= settings.value("conf/outputdest", APP_VARDIR).toByteArray();
+
     if (argc >= 2)
     {
         for(int i = 1; i < argc; ++i){
@@ -25,7 +37,9 @@ int main(int argc, char *argv[])
                 cout << "Cambiar puerto: -p o --port <puerto>" <<  endl;
                 cout << "Cambiar ruta de clave: -k o --key <ruta>" <<  endl;
                 cout << "Cambiar ruta de certificado: -c o --cert <ruta>" <<  endl;
-                //exit(0);
+                cout << "Cambiar usuario: u o uid <ruta>" <<  endl;
+                cout << "Cambiar grupo: g o gid <ruta>" <<  endl;
+                cout << "Cambiar ruta destino: o o output <ruta>" <<  endl;
             }
 
             if(strcmp(argv[i],"p") == 0 || strcmp(argv[i], "port") == 0)
